@@ -24,13 +24,12 @@ const cmsData = {
     { id: 2, src: "https://images.unsplash.com/photo-1528605248644-14dd04022da1?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80", alt: "Kegiatan Pendidikan 2" },
     { id: 3, src: "https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80", alt: "Kegiatan Lingkungan 3" },
     { id: 4, src: "https://images.unsplash.com/photo-1511632765486-a01980e01a18?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80", alt: "Komunitas 4" },
-    { id: 5, src: "https://images.unsplash.com/photo-1593113565694-c6f33e370a80?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80", alt: "Bantuan Bencana 5" },
-    { id: 6, src: "https://images.unsplash.com/photo-1531844251246-9a1bfa80c8a9?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80", alt: "Donor Darah 6" },
   ]
 };
 
 export default function Home() {
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [activeGalleryIndex, setActiveGalleryIndex] = useState(1);
 
   // Auto-slide effect
   useEffect(() => {
@@ -110,7 +109,7 @@ export default function Home() {
           </div>
 
           <div className="flex flex-col lg:flex-row items-start gap-12 lg:gap-16">
-            
+
             {/* Left: Mission Statement */}
             <div className="w-full lg:w-2/3">
               <p className="text-[18px] text-body leading-relaxed font-medium">
@@ -141,42 +140,73 @@ export default function Home() {
       </section>
 
       {/* 3.3 Galeri Section */}
-      <section className="py-20 bg-white">
+      <section className="py-20 bg-white overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-[20px] md:text-[32px] font-bold text-header font-poppins mb-4">
-              Galeri Kegiatan
-            </h2>
-            <p className="text-body text-lg">Momen-momen bermakna dalam setiap langkah perjalanan kami.</p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {cmsData.galleryData.map((item) => (
-              <div
-                key={item.id}
-                className="group relative h-80 rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-shadow duration-300 cursor-pointer bg-gray-100"
-              >
-                {/* Fallback color/placeholder if Next Image requires domains configured, using standard img tag for ease with unsplash */}
-                <img
-                  src={item.src}
-                  alt={item.alt}
-                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                <div className="absolute bottom-0 left-0 right-0 p-6 translate-y-6 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
-                  <h3 className="text-white font-bold font-poppins text-lg">{item.alt}</h3>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-12 text-center">
+          <div className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
+            <div>
+              <h2 className="text-[20px] md:text-[32px] font-bold text-header font-poppins mb-4">
+                Galeri Kegiatan
+              </h2>
+              <div className="w-16 h-1 bg-primary rounded-full"></div>
+            </div>
             <Link
               href="/galeri"
-              className="inline-block bg-white border border-gray-300 text-header hover:border-primary hover:text-primary px-8 py-3 rounded-full font-bold transition-all duration-300"
+              className="inline-flex items-center justify-center gap-2 text-primary hover:text-primary/80 text-lg font-medium transition-colors duration-300 whitespace-nowrap"
             >
               Lihat Semua Foto
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+              </svg>
             </Link>
+          </div>
+
+          <div className="relative w-full h-[350px] md:h-[500px] flex items-center justify-center mt-12 mb-4">
+            {cmsData.galleryData.map((item, index) => {
+              const total = cmsData.galleryData.length;
+              let state = 'hidden';
+              if (index === activeGalleryIndex) state = 'active';
+              else if (index === (activeGalleryIndex - 1 + total) % total) state = 'prev';
+              else if (index === (activeGalleryIndex + 1) % total) state = 'next';
+
+              return (
+                <div
+                  key={item.id}
+                  className={`absolute transition-all duration-700 ease-in-out group ${state === 'active'
+                    ? 'z-20 w-[85%] md:w-[65%] h-full opacity-100 shadow-2xl scale-100 rounded-3xl'
+                    : state === 'prev'
+                      ? 'z-10 w-[40%] md:w-[30%] h-[70%] opacity-60 -translate-x-[90%] md:-translate-x-[110%] scale-95 rounded-2xl cursor-pointer hover:opacity-100'
+                      : state === 'next'
+                        ? 'z-10 w-[40%] md:w-[30%] h-[70%] opacity-60 translate-x-[90%] md:translate-x-[110%] scale-95 rounded-2xl cursor-pointer hover:opacity-100'
+                        : 'z-0 w-[40%] md:w-[30%] h-[70%] opacity-0 scale-90 pointer-events-none'
+                    }`}
+                  onClick={() => {
+                    if (state === 'prev' || state === 'next') setActiveGalleryIndex(index);
+                  }}
+                >
+                  <img
+                    src={item.src}
+                    alt={item.alt}
+                    className="w-full h-full object-cover rounded-[inherit]"
+                  />
+                  <div className={`absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-6 md:p-8 rounded-[inherit] transition-opacity duration-300 ${state === 'active' ? 'opacity-0 group-hover:opacity-100' : 'opacity-0'}`}>
+                    <h3 className="text-white font-bold text-xl md:text-3xl drop-shadow-md translate-y-4 group-hover:translate-y-0 transition-transform duration-300">{item.alt}</h3>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Pagination Dots */}
+          <div className="flex justify-center items-center gap-3 mt-6 mb-8">
+            {cmsData.galleryData.map((_, idx) => (
+              <button
+                key={idx}
+                onClick={(e) => { e.stopPropagation(); setActiveGalleryIndex(idx); }}
+                className={`transition-all duration-300 rounded-full shadow-sm ${idx === activeGalleryIndex ? "bg-primary w-8 h-2.5" : "bg-gray-300 w-2.5 h-2.5 hover:bg-gray-400"
+                  }`}
+                aria-label={`Go to slide ${idx + 1}`}
+              />
+            ))}
           </div>
         </div>
       </section>
