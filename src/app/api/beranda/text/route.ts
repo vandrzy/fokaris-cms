@@ -20,7 +20,6 @@ const INITIAL_DATA = [
   { key: 'hero_subtitle', value: 'Platform CMS terbaik untuk mengelola web Anda dengan mudah dan cepat.', max_length: 160 },
   { key: 'about_title', value: 'Tentang Kami', max_length: 50 },
   { key: 'about_desc', value: 'Kami adalah penyedia solusi digital yang berfokus pada inovasi dan kemudahan.', max_length: 400 },
-  { key: 'footer_text', value: '© 2026 Fokaris CMS. All rights reserved.', max_length: 100 },
 ];
 
 export async function GET() {
