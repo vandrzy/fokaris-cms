@@ -57,7 +57,7 @@ export async function POST(req: Request) {
 
     // JWT Creation
     const secret = process.env.JWT_SECRET || "default_fokaris_secret_123";
-    const token = jwt.sign({ username }, secret, { expiresIn: "1d" });
+    const token = jwt.sign({ username }, secret, { expiresIn: "2h" });
 
     // Return the response with token
     return NextResponse.json(

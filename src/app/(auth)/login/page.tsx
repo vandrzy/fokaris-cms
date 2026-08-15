@@ -31,7 +31,7 @@ export default function LoginPage() {
         setErrorMsg(data.message || "Login gagal");
       } else {
         // Simpan token (bisa juga disimpan di cookies melalui cara lain, tapi untuk kesederhanaan, kita taruh di localStorage atau Document Cookie)
-        document.cookie = `token=${data.token}; path=/; max-age=86400; SameSite=Strict`;
+        document.cookie = `token=${data.token}; path=/; max-age=7200; SameSite=Strict`;
         router.push("/dashboard");
       }
     } catch (err) {
@@ -67,13 +67,6 @@ export default function LoginPage() {
             <p className="text-sm text-body mt-2">Masuk untuk mengelola konten</p>
           </div>
         </div>
-
-        {/* Error Message */}
-        {errorMsg && (
-          <div className="bg-red-50 text-red-500 p-3 rounded-lg text-sm text-center border border-red-100">
-            {errorMsg}
-          </div>
-        )}
 
         {/* Form Fields */}
         <form className="space-y-5" onSubmit={handleLogin}>
@@ -115,6 +108,13 @@ export default function LoginPage() {
               </button>
             </div>
           </div>
+
+          {/* Error Message */}
+          {errorMsg && (
+            <div className="bg-red-50 text-red-500 p-3 rounded-lg text-sm text-center border border-red-100">
+              {errorMsg}
+            </div>
+          )}
 
           <button
             type="submit"
