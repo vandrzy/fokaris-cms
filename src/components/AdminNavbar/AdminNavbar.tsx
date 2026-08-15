@@ -16,7 +16,7 @@ export default function AdminNavbar() {
     if (pathname === "/dashboard") return "Dashboard";
     if (pathname.includes("/dashboard/blog")) return "Manajemen Blog";
     if (pathname.includes("/dashboard/gallery")) return "Manajemen Galeri";
-    if (pathname.includes("/dashboard/pages")) return "Manajemen Halaman";
+    if (pathname.includes("/dashboard/pages")) return "Manajemen Konten";
     if (pathname.includes("/dashboard/settings")) return "Pengaturan Admin";
     return "Dashboard";
   };
