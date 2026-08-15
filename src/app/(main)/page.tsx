@@ -14,7 +14,7 @@ const cmsData = {
     "https://images.unsplash.com/photo-1531206715517-5c0ba140b2b8?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80"
   ],
   aboutTitle: "Tentang Organisasi Kami",
-  aboutText: "Misi kami adalah mewujudkan organisasi yang sejahtera, mandiri, dan berbudaya melalui kolaborasi aktif, pemanfaatan potensi yang berkelanjutan, serta pelayanan publik yang transparan.",
+  aboutText: "Misi kami adalah mewujudkan organisasi yang sejahtera, mandiri, dan berbudaya melalui kolaborasi aktif, pemanfaatan potensi yang berkelanjutan, serta pelayanan publik yang transparan.Misi kami adalah mewujudkan organisasi yang sejahtera, mandiri, dan berbudaya melalui kolaborasi aktif, pemanfaatan potensi yang berkelanjutan, serta pelayanan publik yang transparan.Misi kami adalah mewujudkan organisasi yang sejahtera, mandiri, dan berbudaya melalui kolaborasi aktif, pemanfaatan potensi yang berkelanjutan, serta pelayanan publik yang transparan.",
   stats: [
     { id: 1, value: "103+", label: "TOTAL ANGGOTA" },
     { id: 2, value: "24", label: "KEGIATAN TERLAKSANA" }
@@ -30,6 +30,14 @@ const cmsData = {
 export default function Home() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [activeGalleryIndex, setActiveGalleryIndex] = useState(1);
+  const [textData, setTextData] = useState<any>(null);
+
+  useEffect(() => {
+    fetch('/api/beranda/text')
+      .then(res => res.json())
+      .then(data => setTextData(data))
+      .catch(console.error);
+  }, []);
 
   // Auto-slide effect
   useEffect(() => {
@@ -65,10 +73,10 @@ export default function Home() {
             {/* Left Content */}
             <div className="max-w-2xl text-left">
               <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold font-poppins text-white mb-6 leading-tight drop-shadow-lg">
-                {cmsData.heroTitle}
+                {textData ? textData.hero_title?.value : cmsData.heroTitle}
               </h1>
               <p className="text-lg md:text-xl text-gray-200 mb-10 max-w-xl leading-relaxed drop-shadow-md">
-                {cmsData.heroSubtitle}
+                {textData ? textData.hero_subtitle?.value : cmsData.heroSubtitle}
               </p>
               <Link
                 href="#profil"
@@ -103,7 +111,7 @@ export default function Home() {
           {/* Header */}
           <div className="mb-12">
             <h2 className="text-[20px] md:text-[32px] font-bold text-header font-poppins mb-4">
-              {cmsData.aboutTitle}
+              {textData ? textData.about_title?.value : cmsData.aboutTitle}
             </h2>
             <div className="w-16 h-1 bg-primary rounded-full"></div>
           </div>
@@ -112,8 +120,8 @@ export default function Home() {
 
             {/* Left: Mission Statement */}
             <div className="w-full lg:w-2/3">
-              <p className="text-[18px] text-body leading-relaxed font-medium">
-                {cmsData.aboutText}
+              <p className="text-[18px] text-body leading-relaxed font-medium whitespace-pre-line">
+                {textData ? textData.about_desc?.value : cmsData.aboutText}
               </p>
             </div>
 

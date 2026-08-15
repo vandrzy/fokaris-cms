@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Save, Image as ImageIcon } from "lucide-react";
 
 // Mock data as initial state
@@ -46,13 +46,60 @@ const initialData = {
 
 export default function HomeDashboardPage() {
   const [formData, setFormData] = useState(initialData);
+  const [textData, setTextData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    fetch('/api/beranda/text')
+      .then(res => res.json())
+      .then(data => {
+        setTextData(data);
+        setLoading(false);
+      })
+      .catch(console.error);
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Simulate save
-    alert("Perubahan berhasil disimpan! (Hanya simulasi UI)");
-    console.log("Data Tersimpan:", formData);
+    setSaving(true);
+    setMessage("");
+
+    const payload = {
+      hero_title: textData?.hero_title?.value,
+      hero_subtitle: textData?.hero_subtitle?.value,
+      about_title: textData?.about_title?.value,
+      about_desc: textData?.about_desc?.value,
+    };
+
+    try {
+      const res = await fetch('/api/beranda/text', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const resData = await res.json();
+      if (!res.ok) {
+        setMessage(`Error: ${resData.message}`);
+      } else {
+        setMessage("Perubahan teks berhasil disimpan!");
+      }
+    } catch (err) {
+      setMessage("Terjadi kesalahan jaringan.");
+    } finally {
+      setSaving(false);
+    }
   };
+
+  const handleTextChange = (key: string, val: string) => {
+    setTextData({
+      ...textData,
+      [key]: { ...textData[key], value: val }
+    });
+  };
+
+  if (loading) return <div className="p-8">Memuat data...</div>;
 
   const handleStatChange = (index: number, field: "value" | "label", val: string) => {
     const newStats = [...formData.stats];
@@ -80,6 +127,13 @@ export default function HomeDashboardPage() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
+        
+        {message && (
+          <div className={`p-4 rounded-md ${message.startsWith('Error') ? 'bg-red-50 text-red-600' : 'bg-green-50 text-green-600'}`}>
+            {message}
+          </div>
+        )}
+
         {/* HERO SECTION */}
         <div className="bg-white p-6 rounded-lg border border-gray-100 shadow-sm">
           <h3 className="text-lg font-bold font-poppins text-header mb-4 border-b border-gray-50 pb-2">Hero Section</h3>
@@ -90,9 +144,12 @@ export default function HomeDashboardPage() {
               <input
                 type="text"
                 className="w-full p-3 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50 text-body"
-                value={formData.heroTitle}
-                onChange={(e) => setFormData({ ...formData, heroTitle: e.target.value })}
+                value={textData?.hero_title?.value || ''}
+                onChange={(e) => handleTextChange('hero_title', e.target.value)}
               />
+              <p className="text-xs text-gray-500 mt-1 text-right">
+                {textData?.hero_title?.value?.length || 0} / {textData?.hero_title?.max_length} karakter
+              </p>
             </div>
             
             <div>
@@ -100,9 +157,12 @@ export default function HomeDashboardPage() {
               <textarea
                 rows={3}
                 className="w-full p-3 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50 text-body"
-                value={formData.heroSubtitle}
-                onChange={(e) => setFormData({ ...formData, heroSubtitle: e.target.value })}
+                value={textData?.hero_subtitle?.value || ''}
+                onChange={(e) => handleTextChange('hero_subtitle', e.target.value)}
               />
+              <p className="text-xs text-gray-500 mt-1 text-right">
+                {textData?.hero_subtitle?.value?.length || 0} / {textData?.hero_subtitle?.max_length} karakter
+              </p>
             </div>
 
             <div>
@@ -137,9 +197,12 @@ export default function HomeDashboardPage() {
               <input
                 type="text"
                 className="w-full p-3 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50 text-body"
-                value={formData.aboutTitle}
-                onChange={(e) => setFormData({ ...formData, aboutTitle: e.target.value })}
+                value={textData?.about_title?.value || ''}
+                onChange={(e) => handleTextChange('about_title', e.target.value)}
               />
+              <p className="text-xs text-gray-500 mt-1 text-right">
+                {textData?.about_title?.value?.length || 0} / {textData?.about_title?.max_length} karakter
+              </p>
             </div>
             
             <div>
@@ -147,9 +210,12 @@ export default function HomeDashboardPage() {
               <textarea
                 rows={4}
                 className="w-full p-3 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50 text-body"
-                value={formData.aboutText}
-                onChange={(e) => setFormData({ ...formData, aboutText: e.target.value })}
+                value={textData?.about_desc?.value || ''}
+                onChange={(e) => handleTextChange('about_desc', e.target.value)}
               />
+              <p className="text-xs text-gray-500 mt-1 text-right">
+                {textData?.about_desc?.value?.length || 0} / {textData?.about_desc?.max_length} karakter
+              </p>
             </div>
           </div>
         </div>
@@ -225,10 +291,11 @@ export default function HomeDashboardPage() {
         <div className="flex justify-end pt-4 pb-12">
           <button
             type="submit"
-            className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-md font-semibold transition-colors shadow-sm"
+            disabled={saving}
+            className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-md font-semibold transition-colors shadow-sm disabled:opacity-70 disabled:cursor-not-allowed"
           >
             <Save className="w-5 h-5" />
-            Simpan Perubahan
+            {saving ? "Menyimpan..." : "Simpan Perubahan Teks"}
           </button>
         </div>
       </form>
