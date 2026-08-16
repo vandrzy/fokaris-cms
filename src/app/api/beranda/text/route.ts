@@ -67,6 +67,13 @@ export async function PUT(req: Request) {
     
     // First pass: Validation
     console.log("PUT Payload received:", body);
+    const keyLabels: Record<string, string> = {
+      hero_title: 'Hero Title',
+      hero_subtitle: 'Hero Subtitle',
+      about_title: 'About Title',
+      about_desc: 'About Text'
+    };
+
     for (const row of rows) {
       const key = row.get('key');
       const maxLength = parseInt(row.get('max_length') || '0', 10);
@@ -78,8 +85,9 @@ export async function PUT(req: Request) {
         const strValue = String(newValue);
         if (maxLength > 0 && strValue.length > maxLength) {
           console.log(`Validation failed! ${strValue.length} > ${maxLength}`);
+          const label = keyLabels[key] || key;
           return NextResponse.json(
-            { message: `${key} maksimal ${maxLength} karakter. (Anda mengirim ${strValue.length} karakter)` },
+            { message: `${label} maksimal ${maxLength} karakter. (Anda mengirim ${strValue.length} karakter)` },
             { status: 400 }
           );
         }

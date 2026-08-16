@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Save, Image as ImageIcon } from "lucide-react";
+import { toast } from "sonner";
 
 // Mock data as initial state
 const initialData = {
@@ -49,7 +50,6 @@ export default function HomeDashboardPage() {
   const [textData, setTextData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState("");
 
   useEffect(() => {
     fetch('/api/beranda/text')
@@ -64,7 +64,6 @@ export default function HomeDashboardPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
-    setMessage("");
 
     const payload = {
       hero_title: textData?.hero_title?.value,
@@ -81,12 +80,12 @@ export default function HomeDashboardPage() {
       });
       const resData = await res.json();
       if (!res.ok) {
-        setMessage(`Error: ${resData.message}`);
+        toast.error(`Gagal menyimpan data: ${resData.message}`);
       } else {
-        setMessage("Perubahan teks berhasil disimpan!");
+        toast.success("Data berhasil disimpan");
       }
     } catch (err) {
-      setMessage("Terjadi kesalahan jaringan.");
+      toast.error("Gagal menyimpan data: Terjadi kesalahan jaringan.");
     } finally {
       setSaving(false);
     }
@@ -97,6 +96,24 @@ export default function HomeDashboardPage() {
       ...textData,
       [key]: { ...textData[key], value: val }
     });
+  };
+
+  const getInputClass = (key: string) => {
+    const val = textData?.[key]?.value || '';
+    const max = textData?.[key]?.max_length || 0;
+    const isError = max > 0 && val.length > max;
+
+    return `w-full p-3 border rounded-md focus:outline-none focus:ring-2 text-body transition-colors ${isError
+      ? 'border-red-500 focus:ring-red-500 focus:ring-1 bg-red-50/30'
+      : 'border-gray-200 focus:ring-primary/50'
+      }`;
+  };
+
+  const getCharCountClass = (key: string) => {
+    const val = textData?.[key]?.value || '';
+    const max = textData?.[key]?.max_length || 0;
+    const isError = max > 0 && val.length > max;
+    return `text-xs mt-1 text-right ${isError ? 'text-red-500 font-semibold' : 'text-gray-500'}`;
   };
 
   if (loading) return <div className="p-8">Memuat data...</div>;
@@ -127,40 +144,34 @@ export default function HomeDashboardPage() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        
-        {message && (
-          <div className={`p-4 rounded-md ${message.startsWith('Error') ? 'bg-red-50 text-red-600' : 'bg-green-50 text-green-600'}`}>
-            {message}
-          </div>
-        )}
 
         {/* HERO SECTION */}
         <div className="bg-white p-6 rounded-lg border border-gray-100 shadow-sm">
           <h3 className="text-lg font-bold font-poppins text-header mb-4 border-b border-gray-50 pb-2">Hero Section</h3>
-          
+
           <div className="space-y-4">
             <div>
               <label className="block font-inter text-sm font-semibold text-header mb-1">Hero Title</label>
               <input
                 type="text"
-                className="w-full p-3 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50 text-body"
+                className={getInputClass('hero_title')}
                 value={textData?.hero_title?.value || ''}
                 onChange={(e) => handleTextChange('hero_title', e.target.value)}
               />
-              <p className="text-xs text-gray-500 mt-1 text-right">
+              <p className={getCharCountClass('hero_title')}>
                 {textData?.hero_title?.value?.length || 0} / {textData?.hero_title?.max_length} karakter
               </p>
             </div>
-            
+
             <div>
               <label className="block font-inter text-sm font-semibold text-header mb-1">Hero Subtitle</label>
               <textarea
                 rows={3}
-                className="w-full p-3 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50 text-body"
+                className={getInputClass('hero_subtitle')}
                 value={textData?.hero_subtitle?.value || ''}
                 onChange={(e) => handleTextChange('hero_subtitle', e.target.value)}
               />
-              <p className="text-xs text-gray-500 mt-1 text-right">
+              <p className={getCharCountClass('hero_subtitle')}>
                 {textData?.hero_subtitle?.value?.length || 0} / {textData?.hero_subtitle?.max_length} karakter
               </p>
             </div>
@@ -190,30 +201,30 @@ export default function HomeDashboardPage() {
         {/* ABOUT SECTION */}
         <div className="bg-white p-6 rounded-lg border border-gray-100 shadow-sm">
           <h3 className="text-lg font-bold font-poppins text-header mb-4 border-b border-gray-50 pb-2">Tentang Kami</h3>
-          
+
           <div className="space-y-4">
             <div>
               <label className="block font-inter text-sm font-semibold text-header mb-1">About Title</label>
               <input
                 type="text"
-                className="w-full p-3 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50 text-body"
+                className={getInputClass('about_title')}
                 value={textData?.about_title?.value || ''}
                 onChange={(e) => handleTextChange('about_title', e.target.value)}
               />
-              <p className="text-xs text-gray-500 mt-1 text-right">
+              <p className={getCharCountClass('about_title')}>
                 {textData?.about_title?.value?.length || 0} / {textData?.about_title?.max_length} karakter
               </p>
             </div>
-            
+
             <div>
               <label className="block font-inter text-sm font-semibold text-header mb-1">About Text</label>
               <textarea
                 rows={4}
-                className="w-full p-3 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50 text-body"
+                className={getInputClass('about_desc')}
                 value={textData?.about_desc?.value || ''}
                 onChange={(e) => handleTextChange('about_desc', e.target.value)}
               />
-              <p className="text-xs text-gray-500 mt-1 text-right">
+              <p className={getCharCountClass('about_desc')}>
                 {textData?.about_desc?.value?.length || 0} / {textData?.about_desc?.max_length} karakter
               </p>
             </div>
@@ -223,7 +234,7 @@ export default function HomeDashboardPage() {
         {/* STATS SECTION */}
         <div className="bg-white p-6 rounded-lg border border-gray-100 shadow-sm">
           <h3 className="text-lg font-bold font-poppins text-header mb-4 border-b border-gray-50 pb-2">Statistik Pencapaian</h3>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {formData.stats.map((stat, idx) => (
               <div key={stat.id} className="p-4 bg-gray-50 rounded-md border border-gray-100 space-y-3">
@@ -254,7 +265,7 @@ export default function HomeDashboardPage() {
         {/* GALLERY SECTION */}
         <div className="bg-white p-6 rounded-lg border border-gray-100 shadow-sm">
           <h3 className="text-lg font-bold font-poppins text-header mb-4 border-b border-gray-50 pb-2">Galeri Kegiatan (Preview)</h3>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {formData.galleryData.map((gallery, idx) => (
               <div key={gallery.id} className="p-4 bg-gray-50 rounded-md border border-gray-100 space-y-3">
@@ -262,9 +273,9 @@ export default function HomeDashboardPage() {
                 <div>
                   <label className="block font-inter text-xs font-semibold text-body/80 mb-1">Image URL</label>
                   <div className="flex items-center gap-2">
-                     <div className="p-2 bg-white border border-gray-200 rounded-md text-gray-400">
-                        <ImageIcon className="w-4 h-4" />
-                      </div>
+                    <div className="p-2 bg-white border border-gray-200 rounded-md text-gray-400">
+                      <ImageIcon className="w-4 h-4" />
+                    </div>
                     <input
                       type="text"
                       className="w-full p-2 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50 text-body text-sm"
