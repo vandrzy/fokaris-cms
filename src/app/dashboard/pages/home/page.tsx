@@ -50,6 +50,9 @@ export default function HomeDashboardPage() {
   const [textData, setTextData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState<number | null>(null);
+  const [pendingImages, setPendingImages] = useState<Record<number, File>>({});
+  const [previewImages, setPreviewImages] = useState<Record<number, string>>({});
 
   useEffect(() => {
     fetch('/api/beranda/text')
@@ -64,6 +67,43 @@ export default function HomeDashboardPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
+    let successCount = 0;
+    let hasError = false;
+
+    // Upload pending images first
+    for (const [idxStr, file] of Object.entries(pendingImages)) {
+      const index = parseInt(idxStr);
+      setUploadingImage(index);
+      const formUpload = new FormData();
+      formUpload.append("file", file);
+      formUpload.append("index", index.toString());
+
+      try {
+        const res = await fetch("/api/beranda/hero-image", {
+          method: "POST",
+          body: formUpload,
+        });
+        const data = await res.json();
+        if (res.ok) {
+          successCount++;
+        } else {
+          toast.error(data.message || `Gagal mengunggah gambar ${index}`);
+          hasError = true;
+          break;
+        }
+      } catch (err) {
+        toast.error(`Terjadi kesalahan saat mengunggah gambar ${index}`);
+        hasError = true;
+        break;
+      } finally {
+        setUploadingImage(null);
+      }
+    }
+
+    if (hasError) {
+      setSaving(false);
+      return; // Berhenti jika ada gambar yang gagal diupload
+    }
 
     const payload = {
       hero_title: textData?.hero_title?.value,
@@ -86,7 +126,10 @@ export default function HomeDashboardPage() {
       if (!res.ok) {
         toast.error(`Gagal menyimpan data: ${resData.message}`);
       } else {
-        toast.success("Data berhasil disimpan");
+        toast.success(`Perubahan teks ${successCount > 0 ? "dan gambar " : ""}berhasil disimpan`);
+        setPendingImages({});
+        setPreviewImages({});
+        fetch('/api/beranda/text').then(r => r.json()).then(data => setTextData(data));
       }
     } catch (err) {
       toast.error("Gagal menyimpan data: Terjadi kesalahan jaringan.");
@@ -120,6 +163,20 @@ export default function HomeDashboardPage() {
     return `text-xs mt-1 text-right ${isError ? 'text-red-500 font-semibold' : 'text-gray-500'}`;
   };
 
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Format file tidak valid. Harap unggah gambar.");
+      return;
+    }
+
+    setPendingImages((prev) => ({ ...prev, [index]: file }));
+    setPreviewImages((prev) => ({ ...prev, [index]: URL.createObjectURL(file) }));
+    if (e.target) e.target.value = ""; 
+  };
+
   if (loading) return <div className="p-8">Memuat data...</div>;
 
 
@@ -128,12 +185,6 @@ export default function HomeDashboardPage() {
     const newGallery = [...formData.galleryData];
     newGallery[index] = { ...newGallery[index], [field]: val };
     setFormData({ ...formData, galleryData: newGallery });
-  };
-
-  const handleHeroImageChange = (index: number, val: string) => {
-    const newImages = [...formData.heroImages];
-    newImages[index] = val;
-    setFormData({ ...formData, heroImages: newImages });
   };
 
   return (
@@ -178,21 +229,42 @@ export default function HomeDashboardPage() {
 
             <div>
               <label className="block font-inter text-sm font-semibold text-header mb-2">Hero Images (Slider)</label>
-              <div className="space-y-3">
-                {formData.heroImages.map((img, idx) => (
-                  <div key={idx} className="flex items-center gap-3">
-                    <div className="p-3 bg-gray-50 border border-gray-200 rounded-md text-gray-400">
-                      <ImageIcon className="w-5 h-5" />
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {[1, 2, 3].map((num) => {
+                  const key = `hero_image_${num}`;
+                  const imgUrl = previewImages[num] || textData?.[key]?.value;
+                  const isLoading = uploadingImage === num;
+
+                  return (
+                    <div key={num} className="relative w-full h-40 rounded-md border-2 border-dashed border-gray-300 bg-gray-50 hover:bg-gray-100 hover:border-primary/50 transition-colors flex flex-col items-center justify-center overflow-hidden group">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
+                        disabled={isLoading}
+                        onChange={(e) => handleImageUpload(e, num)}
+                      />
+                      
+                      {imgUrl && (
+                        <div className="absolute inset-0 z-0">
+                          <img src={imgUrl} alt={`Hero ${num}`} className="w-full h-full object-cover" />
+                          <div className="absolute inset-0 bg-black/40 group-hover:bg-black/50 transition-colors"></div>
+                        </div>
+                      )}
+                      
+                      <div className="relative z-10 flex flex-col items-center pointer-events-none text-center p-4">
+                        {isLoading ? (
+                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mb-2"></div>
+                        ) : (
+                          <ImageIcon className={`w-8 h-8 mb-2 ${imgUrl ? 'text-white' : 'text-gray-400'}`} />
+                        )}
+                        <span className={`text-sm font-medium ${imgUrl ? 'text-white' : 'text-gray-500'}`}>
+                          {isLoading ? "Mengunggah..." : imgUrl ? "Ubah Gambar" : "Tarik & Lepas"}
+                        </span>
+                      </div>
                     </div>
-                    <input
-                      type="text"
-                      className="flex-1 p-3 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50 text-body"
-                      value={img}
-                      onChange={(e) => handleHeroImageChange(idx, e.target.value)}
-                      placeholder={`URL Gambar ${idx + 1}`}
-                    />
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </div>

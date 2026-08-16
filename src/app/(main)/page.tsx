@@ -39,20 +39,28 @@ export default function Home() {
       .catch(console.error);
   }, []);
 
+  const heroImages = [];
+  if (textData) {
+    if (textData.hero_image_1?.value) heroImages.push(textData.hero_image_1.value);
+    if (textData.hero_image_2?.value) heroImages.push(textData.hero_image_2.value);
+    if (textData.hero_image_3?.value) heroImages.push(textData.hero_image_3.value);
+  }
+  const activeHeroImages = heroImages.length > 0 ? heroImages : cmsData.heroImages;
+
   // Auto-slide effect
   useEffect(() => {
     const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % cmsData.heroImages.length);
+      setCurrentSlide((prev) => (prev + 1) % activeHeroImages.length);
     }, 6000);
     return () => clearInterval(timer);
-  }, []);
+  }, [activeHeroImages.length]);
 
   return (
     <div className="flex flex-col min-h-screen">
       {/* 3.1 Hero Section (Slider) */}
       <section className="relative w-full h-screen overflow-hidden bg-header flex items-center">
         {/* Background Images */}
-        {cmsData.heroImages.map((src, index) => (
+        {activeHeroImages.map((src, index) => (
           <div
             key={index}
             className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${index === currentSlide ? "opacity-100" : "opacity-0"
@@ -91,7 +99,7 @@ export default function Home() {
 
             {/* Right Content: Slider Indicators */}
             <div className="hidden md:flex items-center gap-3 mb-4">
-              {cmsData.heroImages.map((_, idx) => (
+              {activeHeroImages.map((_, idx) => (
                 <button
                   key={idx}
                   onClick={() => setCurrentSlide(idx)}

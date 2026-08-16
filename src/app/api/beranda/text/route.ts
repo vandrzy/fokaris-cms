@@ -24,6 +24,9 @@ const INITIAL_DATA = [
   { key: 'stat_1_label', value: 'TOTAL ANGGOTA', max_length: 40 },
   { key: 'stat_2_value', value: '24', max_length: 8 },
   { key: 'stat_2_label', value: 'KEGIATAN TERLAKSANA', max_length: 40 },
+  { key: 'hero_image_1', value: '', max_length: 0 },
+  { key: 'hero_image_2', value: '', max_length: 0 },
+  { key: 'hero_image_3', value: '', max_length: 0 },
 ];
 
 export async function GET() {
@@ -96,7 +99,10 @@ export async function PUT(req: Request) {
       stat_1_value: 'Nilai Statistik 1',
       stat_1_label: 'Label Statistik 1',
       stat_2_value: 'Nilai Statistik 2',
-      stat_2_label: 'Label Statistik 2'
+      stat_2_label: 'Label Statistik 2',
+      hero_image_1: 'Hero Image 1',
+      hero_image_2: 'Hero Image 2',
+      hero_image_3: 'Hero Image 3'
     };
 
     for (const row of rows) {
