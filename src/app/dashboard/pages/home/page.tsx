@@ -70,6 +70,10 @@ export default function HomeDashboardPage() {
       hero_subtitle: textData?.hero_subtitle?.value,
       about_title: textData?.about_title?.value,
       about_desc: textData?.about_desc?.value,
+      stat_1_value: textData?.stat_1_value?.value,
+      stat_1_label: textData?.stat_1_label?.value,
+      stat_2_value: textData?.stat_2_value?.value,
+      stat_2_label: textData?.stat_2_label?.value,
     };
 
     try {
@@ -118,11 +122,7 @@ export default function HomeDashboardPage() {
 
   if (loading) return <div className="p-8">Memuat data...</div>;
 
-  const handleStatChange = (index: number, field: "value" | "label", val: string) => {
-    const newStats = [...formData.stats];
-    newStats[index] = { ...newStats[index], [field]: val };
-    setFormData({ ...formData, stats: newStats });
-  };
+
 
   const handleGalleryChange = (index: number, field: "src" | "alt", val: string) => {
     const newGallery = [...formData.galleryData];
@@ -236,29 +236,38 @@ export default function HomeDashboardPage() {
           <h3 className="text-lg font-bold font-poppins text-header mb-4 border-b border-gray-50 pb-2">Statistik Pencapaian</h3>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {formData.stats.map((stat, idx) => (
-              <div key={stat.id} className="p-4 bg-gray-50 rounded-md border border-gray-100 space-y-3">
-                <h4 className="font-semibold text-sm text-header">Statistik {idx + 1}</h4>
+            {[1, 2].map((num) => {
+              const valKey = `stat_${num}_value`;
+              const labelKey = `stat_${num}_label`;
+              return (
+              <div key={num} className="p-4 bg-gray-50 rounded-md border border-gray-100 space-y-3">
+                <h4 className="font-semibold text-sm text-header">Statistik {num}</h4>
                 <div>
                   <label className="block font-inter text-xs font-semibold text-body/80 mb-1">Nilai (Value)</label>
                   <input
                     type="text"
-                    className="w-full p-2 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50 text-body text-sm"
-                    value={stat.value}
-                    onChange={(e) => handleStatChange(idx, "value", e.target.value)}
+                    className={getInputClass(valKey)}
+                    value={textData?.[valKey]?.value || ''}
+                    onChange={(e) => handleTextChange(valKey, e.target.value)}
                   />
+                  <p className={getCharCountClass(valKey)}>
+                    {textData?.[valKey]?.value?.length || 0} / {textData?.[valKey]?.max_length || 8} karakter
+                  </p>
                 </div>
                 <div>
                   <label className="block font-inter text-xs font-semibold text-body/80 mb-1">Label</label>
                   <input
                     type="text"
-                    className="w-full p-2 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50 text-body text-sm"
-                    value={stat.label}
-                    onChange={(e) => handleStatChange(idx, "label", e.target.value)}
+                    className={getInputClass(labelKey)}
+                    value={textData?.[labelKey]?.value || ''}
+                    onChange={(e) => handleTextChange(labelKey, e.target.value)}
                   />
+                  <p className={getCharCountClass(labelKey)}>
+                    {textData?.[labelKey]?.value?.length || 0} / {textData?.[labelKey]?.max_length || 40} karakter
+                  </p>
                 </div>
               </div>
-            ))}
+            )})}
           </div>
         </div>
 

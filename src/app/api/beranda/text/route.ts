@@ -20,6 +20,10 @@ const INITIAL_DATA = [
   { key: 'hero_subtitle', value: 'Platform CMS terbaik untuk mengelola web Anda dengan mudah dan cepat.', max_length: 160 },
   { key: 'about_title', value: 'Tentang Kami', max_length: 50 },
   { key: 'about_desc', value: 'Kami adalah penyedia solusi digital yang berfokus pada inovasi dan kemudahan.', max_length: 400 },
+  { key: 'stat_1_value', value: '103+', max_length: 8 },
+  { key: 'stat_1_label', value: 'TOTAL ANGGOTA', max_length: 40 },
+  { key: 'stat_2_value', value: '24', max_length: 8 },
+  { key: 'stat_2_label', value: 'KEGIATAN TERLAKSANA', max_length: 40 },
 ];
 
 export async function GET() {
@@ -33,7 +37,16 @@ export async function GET() {
       await sheet.addRows(INITIAL_DATA);
     }
 
-    const rows = await sheet.getRows();
+    let rows = await sheet.getRows();
+    
+    // Auto-seed missing rows
+    const existingKeys = new Set(rows.map((row: any) => row.get('key')));
+    const missingRows = INITIAL_DATA.filter(item => !existingKeys.has(item.key));
+    if (missingRows.length > 0) {
+      await sheet.addRows(missingRows);
+      rows = await sheet.getRows();
+    }
+
     const data: Record<string, any> = {};
 
     for (let i = 0; i < rows.length; i++) {
@@ -63,7 +76,15 @@ export async function PUT(req: Request) {
       await sheet.addRows(INITIAL_DATA);
     }
 
-    const rows = await sheet.getRows();
+    let rows = await sheet.getRows();
+
+    // Auto-seed missing rows
+    const existingKeys = new Set(rows.map((row: any) => row.get('key')));
+    const missingRows = INITIAL_DATA.filter(item => !existingKeys.has(item.key));
+    if (missingRows.length > 0) {
+      await sheet.addRows(missingRows);
+      rows = await sheet.getRows();
+    }
     
     // First pass: Validation
     console.log("PUT Payload received:", body);
@@ -71,7 +92,11 @@ export async function PUT(req: Request) {
       hero_title: 'Hero Title',
       hero_subtitle: 'Hero Subtitle',
       about_title: 'About Title',
-      about_desc: 'About Text'
+      about_desc: 'About Text',
+      stat_1_value: 'Nilai Statistik 1',
+      stat_1_label: 'Label Statistik 1',
+      stat_2_value: 'Nilai Statistik 2',
+      stat_2_label: 'Label Statistik 2'
     };
 
     for (const row of rows) {

@@ -127,20 +127,25 @@ export default function Home() {
 
             {/* Right: Stats */}
             <div className="w-full lg:w-1/3 flex flex-col space-y-8 lg:pl-12 lg:border-l border-gray-200">
-              {cmsData.stats.map((stat, index) => (
-                <div key={stat.id} className="flex flex-col">
-                  <span className="text-5xl md:text-6xl font-bold text-primary font-poppins mb-2">
-                    {stat.value}
-                  </span>
-                  <span className="text-sm font-semibold text-gray-500 tracking-wider">
-                    {stat.label}
-                  </span>
-                  {/* Subtle divider except for last item */}
-                  {index !== cmsData.stats.length - 1 && (
-                    <div className="h-px w-16 bg-gray-200 mt-6"></div>
-                  )}
-                </div>
-              ))}
+              {[1, 2].map((num, index) => {
+                const statValue = textData ? textData[`stat_${num}_value`]?.value : cmsData.stats[index].value;
+                const statLabel = textData ? textData[`stat_${num}_label`]?.value : cmsData.stats[index].label;
+                
+                return (
+                  <div key={num} className="flex flex-col">
+                    <span className="text-5xl md:text-6xl font-bold text-primary font-poppins mb-2">
+                      {statValue}
+                    </span>
+                    <span className="text-sm font-semibold text-gray-500 tracking-wider">
+                      {statLabel}
+                    </span>
+                    {/* Subtle divider except for last item */}
+                    {index !== 1 && (
+                      <div className="h-px w-16 bg-gray-200 mt-6"></div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
 
           </div>
