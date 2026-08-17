@@ -25,6 +25,11 @@ export default function Navbar() {
   const isHomePage = pathname === "/";
   const showSolidBackground = !isHomePage || isScrolled;
 
+  const isActive = (path: string) => {
+    if (path === '/') return pathname === '/';
+    return pathname.startsWith(path);
+  };
+
   return (
     <nav
       className={`fixed top-0 w-full z-50 transition-colors duration-300 ${
@@ -46,19 +51,19 @@ export default function Navbar() {
           </div>
           
           <div className="hidden md:flex items-center space-x-8 ml-auto">
-            <Link href="/" className="hover:text-primary transition-colors font-medium text-sm uppercase tracking-wider">
+            <Link href="/" className={`transition-colors font-medium text-sm uppercase tracking-wider ${isActive('/') ? 'text-primary' : 'hover:text-primary'}`}>
               Beranda
             </Link>
-            <Link href="/blog" className="hover:text-primary transition-colors font-medium text-sm uppercase tracking-wider">
+            <Link href="/blog" className={`transition-colors font-medium text-sm uppercase tracking-wider ${isActive('/blog') ? 'text-primary' : 'hover:text-primary'}`}>
               Blog
             </Link>
-            <Link href="/galeri" className="hover:text-primary transition-colors font-medium text-sm uppercase tracking-wider">
+            <Link href="/galeri" className={`transition-colors font-medium text-sm uppercase tracking-wider ${isActive('/galeri') ? 'text-primary' : 'hover:text-primary'}`}>
               Galeri
             </Link>
             
             <Link
               href="/login"
-              className="flex items-center gap-2 hover:text-primary transition-colors font-medium text-sm uppercase tracking-wider"
+              className={`flex items-center gap-2 transition-colors font-medium text-sm uppercase tracking-wider ${isActive('/login') ? 'text-primary' : 'hover:text-primary'}`}
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
@@ -93,21 +98,21 @@ export default function Navbar() {
             <Link 
               href="/" 
               onClick={() => setIsMobileMenuOpen(false)}
-              className="hover:text-primary transition-colors font-bold text-base uppercase tracking-wider block"
+              className={`transition-colors font-bold text-base uppercase tracking-wider block ${isActive('/') ? 'text-primary' : 'hover:text-primary'}`}
             >
               Beranda
             </Link>
             <Link 
               href="/blog" 
               onClick={() => setIsMobileMenuOpen(false)}
-              className="hover:text-primary transition-colors font-bold text-base uppercase tracking-wider block"
+              className={`transition-colors font-bold text-base uppercase tracking-wider block ${isActive('/blog') ? 'text-primary' : 'hover:text-primary'}`}
             >
               Blog
             </Link>
             <Link 
               href="/galeri" 
               onClick={() => setIsMobileMenuOpen(false)}
-              className="hover:text-primary transition-colors font-bold text-base uppercase tracking-wider block"
+              className={`transition-colors font-bold text-base uppercase tracking-wider block ${isActive('/galeri') ? 'text-primary' : 'hover:text-primary'}`}
             >
               Galeri
             </Link>
@@ -115,7 +120,7 @@ export default function Navbar() {
             <Link
               href="/login"
               onClick={() => setIsMobileMenuOpen(false)}
-              className="flex items-center gap-2 hover:text-primary transition-colors font-bold text-base uppercase tracking-wider"
+              className={`flex items-center gap-2 transition-colors font-bold text-base uppercase tracking-wider ${isActive('/login') ? 'text-primary' : 'hover:text-primary'}`}
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
