@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTextData } from "@/context/TextContext";
 import Link from "next/link";
 import Image from "next/image";
 
@@ -30,14 +31,7 @@ const cmsData = {
 export default function Home() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [activeGalleryIndex, setActiveGalleryIndex] = useState(1);
-  const [textData, setTextData] = useState<any>(null);
-
-  useEffect(() => {
-    fetch('/api/beranda/text')
-      .then(res => res.json())
-      .then(data => setTextData(data))
-      .catch(console.error);
-  }, []);
+  const textData = useTextData();
 
   const heroImages = [];
   if (textData) {

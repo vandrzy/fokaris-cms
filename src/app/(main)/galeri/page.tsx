@@ -1,4 +1,9 @@
+"use client";
+
+import { useTextData } from "@/context/TextContext";
+
 export default function Galeri() {
+  const textData = useTextData();
   // Dummy gallery items
   const galleryItems = [
     { id: 1, title: "Penghijauan Pesisir", color: "bg-primary/20", height: "h-64" },
@@ -16,9 +21,11 @@ export default function Galeri() {
     <div className="pt-20 pb-32 bg-background min-h-screen">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mt-10 md:mt-16 mb-16">
-          <h1 className="text-4xl md:text-5xl font-bold text-header mb-4">Galeri Kegiatan</h1>
+          <h1 className="text-4xl md:text-5xl font-bold text-header mb-4">
+            {textData ? textData.galeri_hero_title?.value : "Galeri Kegiatan"}
+          </h1>
           <p className="text-lg text-body max-w-2xl mx-auto">
-            Jejak langkah nyata kami tergambar dalam momen-momen kebersamaan, perjuangan, dan senyum bahagia mereka yang terbantu.
+            {textData ? textData.galeri_hero_subtitle?.value : "Jejak langkah nyata kami tergambar dalam momen-momen kebersamaan, perjuangan, dan senyum bahagia mereka yang terbantu."}
           </p>
         </div>
 

@@ -1,6 +1,11 @@
+"use client";
+
+import { useTextData } from "@/context/TextContext";
 import Link from "next/link";
 
 export default function Blog() {
+  const textData = useTextData();
+
   const posts = [
     {
       id: 1,
@@ -56,9 +61,11 @@ export default function Blog() {
     <div className="pt-20 pb-32 bg-background min-h-screen">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mt-10 md:mt-16 mb-16">
-          <h1 className="text-4xl md:text-5xl font-bold text-header mb-4">Blog & Publikasi</h1>
+          <h1 className="text-4xl md:text-5xl font-bold text-header mb-4">
+            {textData ? textData.blog_hero_title?.value : "Blog & Publikasi"}
+          </h1>
           <p className="text-lg text-body max-w-2xl mx-auto">
-            Ikuti perkembangan terbaru, cerita inspiratif, dan laporan kegiatan dari berbagai program yang telah kami jalankan.
+            {textData ? textData.blog_hero_subtitle?.value : "Ikuti perkembangan terbaru, cerita inspiratif, dan laporan kegiatan dari berbagai program yang telah kami jalankan."}
           </p>
         </div>
 

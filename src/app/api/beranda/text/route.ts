@@ -27,6 +27,10 @@ const INITIAL_DATA = [
   { key: 'hero_image_1', value: '', max_length: 0 },
   { key: 'hero_image_2', value: '', max_length: 0 },
   { key: 'hero_image_3', value: '', max_length: 0 },
+  { key: 'blog_hero_title', value: 'Blog & Publikasi', max_length: 50 },
+  { key: 'blog_hero_subtitle', value: 'Ikuti perkembangan terbaru, cerita inspiratif, dan laporan kegiatan dari berbagai program yang telah kami jalankan.', max_length: 150 },
+  { key: 'galeri_hero_title', value: 'Galeri Kegiatan', max_length: 50 },
+  { key: 'galeri_hero_subtitle', value: 'Jejak langkah nyata kami tergambar dalam momen-momen kebersamaan, perjuangan, dan senyum bahagia mereka yang terbantu.', max_length: 150 },
 ];
 
 export async function GET() {
@@ -102,7 +106,11 @@ export async function PUT(req: Request) {
       stat_2_label: 'Label Statistik 2',
       hero_image_1: 'Hero Image 1',
       hero_image_2: 'Hero Image 2',
-      hero_image_3: 'Hero Image 3'
+      hero_image_3: 'Hero Image 3',
+      blog_hero_title: 'Blog Hero Title',
+      blog_hero_subtitle: 'Blog Hero Subtitle',
+      galeri_hero_title: 'Galeri Hero Title',
+      galeri_hero_subtitle: 'Galeri Hero Subtitle'
     };
 
     for (const row of rows) {
