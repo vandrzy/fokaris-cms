@@ -32,8 +32,10 @@ export default function Navbar() {
 
   return (
     <nav
-      className={`fixed top-0 w-full z-50 transition-colors duration-300 ${
-        showSolidBackground ? "bg-background/90 backdrop-blur-md shadow-md text-header" : "bg-transparent text-white drop-shadow-md"
+      className={`fixed top-0 w-full z-50 transition-all duration-300 ${
+        showSolidBackground 
+          ? `bg-background/90 backdrop-blur-md text-header ${isScrolled ? 'shadow-md' : ''}` 
+          : "bg-transparent text-white drop-shadow-md"
       }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
