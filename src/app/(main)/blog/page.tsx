@@ -55,7 +55,7 @@ export default function Blog() {
   return (
     <div className="pt-20 pb-32 bg-background min-h-screen">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-16">
+        <div className="text-center mt-10 md:mt-16 mb-16">
           <h1 className="text-4xl md:text-5xl font-bold text-header mb-4">Blog & Publikasi</h1>
           <p className="text-lg text-body max-w-2xl mx-auto">
             Ikuti perkembangan terbaru, cerita inspiratif, dan laporan kegiatan dari berbagai program yang telah kami jalankan.
@@ -64,8 +64,8 @@ export default function Blog() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {posts.map((post) => (
-            <article 
-              key={post.id} 
+            <article
+              key={post.id}
               className="bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 border border-gray-100 flex flex-col h-full group"
             >
               <div className={`h-48 w-full bg-${post.color}/10 relative overflow-hidden flex items-center justify-center`}>
@@ -87,8 +87,8 @@ export default function Blog() {
                 <p className="text-body text-sm leading-relaxed mb-6 flex-grow">
                   {post.excerpt}
                 </p>
-                <Link 
-                  href={`/blog/${post.id}`} 
+                <Link
+                  href={`/blog/${post.id}`}
                   className="inline-flex items-center text-primary font-semibold hover:text-secondary transition-colors"
                 >
                   Baca Selengkapnya

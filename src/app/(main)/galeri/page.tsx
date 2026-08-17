@@ -15,7 +15,7 @@ export default function Galeri() {
   return (
     <div className="pt-20 pb-32 bg-background min-h-screen">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-16">
+        <div className="text-center mt-10 md:mt-16 mb-16">
           <h1 className="text-4xl md:text-5xl font-bold text-header mb-4">Galeri Kegiatan</h1>
           <p className="text-lg text-body max-w-2xl mx-auto">
             Jejak langkah nyata kami tergambar dalam momen-momen kebersamaan, perjuangan, dan senyum bahagia mereka yang terbantu.
@@ -25,12 +25,12 @@ export default function Galeri() {
         {/* Masonry-like CSS Grid */}
         <div className="columns-1 md:columns-2 lg:columns-3 gap-6 space-y-6">
           {galleryItems.map((item) => (
-            <div 
-              key={item.id} 
+            <div
+              key={item.id}
               className={`relative rounded-3xl overflow-hidden group cursor-pointer break-inside-avoid shadow-sm hover:shadow-2xl transition-all duration-300 ${item.height} ${item.color}`}
             >
               <div className="absolute inset-0 bg-gradient-to-t from-header/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              
+
               <div className="absolute inset-0 flex items-center justify-center">
                 <svg className="w-12 h-12 text-white/50 group-hover:scale-125 transition-transform duration-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
