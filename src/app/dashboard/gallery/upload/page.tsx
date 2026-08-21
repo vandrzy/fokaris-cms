@@ -1,16 +1,45 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { ImageIcon, Save, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function GalleryUploadPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const editShortcode = searchParams.get('edit');
+
   const [title, setTitle] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isFetching, setIsFetching] = useState(!!editShortcode);
+
+  useEffect(() => {
+    if (editShortcode) {
+      const fetchEditData = async () => {
+        try {
+          const res = await fetch(`/api/galeri?shortcode=${editShortcode}`);
+          const result = await res.json();
+          if (res.ok && result.data) {
+            setTitle(result.data.judul || '');
+            setPreviewUrl(result.data["link gambar"] || null);
+          } else {
+            toast.error(result.message || "Gagal mengambil data");
+            router.push('/dashboard/gallery');
+          }
+        } catch (error) {
+          console.error(error);
+          toast.error("Terjadi kesalahan sistem");
+        } finally {
+          setIsFetching(false);
+        }
+      };
+      fetchEditData();
+    }
+  }, [editShortcode, router]);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
@@ -28,10 +57,10 @@ export default function GalleryUploadPage() {
     if (e.target) e.target.value = "";
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!file) {
+    if (!editShortcode && !file) {
       toast.error("Silakan pilih gambar terlebih dahulu.");
       return;
     }
@@ -40,13 +69,52 @@ export default function GalleryUploadPage() {
       toast.error("Silakan masukkan judul gambar.");
       return;
     }
-
-    // Simulasi proses upload (tanpa backend)
-    toast.success("Gambar berhasil diupload ke galeri!");
     
-    // Redirect kembali ke galeri
-    router.push('/dashboard/gallery');
+    if (title.length > 20) {
+      toast.error("Judul gambar maksimal 20 karakter.");
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const formData = new FormData();
+      formData.append("judul", title);
+      if (file) {
+        formData.append("gambar", file);
+      }
+
+      const url = editShortcode ? `/api/galeri?shortcode=${editShortcode}` : '/api/galeri';
+      const method = editShortcode ? 'PUT' : 'POST';
+
+      const res = await fetch(url, {
+        method,
+        body: formData,
+      });
+
+      const result = await res.json();
+
+      if (res.ok) {
+        toast.success(result.message || (editShortcode ? "Gambar berhasil diupdate!" : "Gambar berhasil diupload!"));
+        router.push('/dashboard/gallery');
+      } else {
+        toast.error(result.message || "Gagal memproses data");
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error("Terjadi kesalahan server");
+    } finally {
+      setIsLoading(false);
+    }
   };
+
+  if (isFetching) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-4xl space-y-6">
@@ -59,8 +127,12 @@ export default function GalleryUploadPage() {
           <ArrowLeft className="w-5 h-5" />
         </Link>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Upload Gambar Baru</h1>
-          <p className="text-sm text-gray-500 mt-1">Tambahkan foto baru ke dalam galeri website Anda.</p>
+          <h1 className="text-2xl font-bold text-gray-900">
+            {editShortcode ? "Edit Gambar Galeri" : "Upload Gambar Baru"}
+          </h1>
+          <p className="text-sm text-gray-500 mt-1">
+            {editShortcode ? "Perbarui judul atau ganti foto pada galeri." : "Tambahkan foto baru ke dalam galeri website Anda."}
+          </p>
         </div>
       </div>
 
@@ -98,15 +170,21 @@ export default function GalleryUploadPage() {
 
           {/* Title Input */}
           <div>
-            <label htmlFor="title" className="block text-sm font-semibold text-gray-900 mb-2">Judul Gambar</label>
+            <label htmlFor="title" className="block font-inter text-sm font-semibold text-header mb-1">Judul Gambar</label>
             <input
               id="title"
               type="text"
-              className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors text-gray-900"
-              placeholder="Masukkan judul untuk gambar ini..."
+              maxLength={20}
+              className={`w-full p-3 border rounded-md focus:outline-none focus:ring-2 text-body transition-colors ${
+                title.length > 20 ? 'border-red-500 focus:ring-red-500 focus:ring-1 bg-red-50/30' : 'border-gray-200 focus:ring-primary/50'
+              }`}
+              placeholder="Masukkan judul untuk gambar ini (maks. 20 karakter)..."
               value={title}
               onChange={(e) => setTitle(e.target.value)}
             />
+            <p className={`text-xs mt-1 text-right ${title.length > 20 ? 'text-red-500 font-semibold' : 'text-gray-500'}`}>
+              {title.length} / 20 karakter
+            </p>
           </div>
 
           {/* Actions */}
@@ -119,10 +197,15 @@ export default function GalleryUploadPage() {
             </Link>
             <button
               type="submit"
-              className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2.5 text-sm font-medium text-white bg-primary hover:bg-primary/90 rounded-lg transition-colors shadow-sm"
+              disabled={isLoading}
+              className={`w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2.5 text-sm font-medium text-white bg-primary rounded-lg transition-colors shadow-sm ${isLoading ? 'opacity-70 cursor-not-allowed' : 'hover:bg-primary/90'}`}
             >
-              <Save className="w-4 h-4" />
-              Kirim
+              {isLoading ? (
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+              ) : (
+                <Save className="w-4 h-4" />
+              )}
+              Simpan
             </button>
           </div>
         </form>

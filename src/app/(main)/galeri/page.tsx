@@ -1,21 +1,80 @@
 "use client";
 
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useTextData } from "@/context/TextContext";
+
+type GalleryItem = {
+  judul: string;
+  "link gambar": string;
+  shortcode: string;
+  color: string;
+  height: string;
+};
+
+const ITEMS_PER_PAGE = 9;
 
 export default function Galeri() {
   const textData = useTextData();
-  // Dummy gallery items
-  const galleryItems = [
-    { id: 1, title: "Penghijauan Pesisir", color: "bg-primary/20", height: "h-64" },
-    { id: 2, title: "Kelas Inspirasi", color: "bg-secondary/20", height: "h-96" },
-    { id: 3, title: "Bantuan Logistik Bencana", color: "bg-blue-200", height: "h-80" },
-    { id: 4, title: "Pelatihan UMKM", color: "bg-primary/30", height: "h-96" },
-    { id: 5, title: "Edukasi Daur Ulang", color: "bg-orange-200", height: "h-64" },
-    { id: 6, title: "Aksi Donor Darah", color: "bg-secondary/30", height: "h-80" },
-    { id: 7, title: "Pembangunan MCK", color: "bg-teal-200", height: "h-72" },
-    { id: 8, title: "Santunan Anak Yatim", color: "bg-purple-200", height: "h-80" },
-    { id: 9, title: "Kampanye Lingkungan", color: "bg-primary/40", height: "h-64" },
+  const [items, setItems] = useState<GalleryItem[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<GalleryItem | null>(null);
+
+  // Random styles for the masonry effect
+  const colors = [
+    "bg-primary/20", "bg-secondary/20", "bg-blue-200", 
+    "bg-primary/30", "bg-orange-200", "bg-secondary/30", 
+    "bg-teal-200", "bg-purple-200", "bg-primary/40"
   ];
+  const heights = ["h-64", "h-80", "h-96", "h-72"];
+
+  const fetchGallery = async (page: number) => {
+    setIsLoading(true);
+    try {
+      const res = await fetch(`/api/galeri?page=${page}&limit=${ITEMS_PER_PAGE}`);
+      const result = await res.json();
+      
+      if (res.ok) {
+        const fetchedItems = (result.data || []).map((item: any, index: number) => ({
+          ...item,
+          color: colors[index % colors.length],
+          height: heights[index % heights.length]
+        }));
+
+        if (page === 1) {
+          setItems(fetchedItems);
+        } else {
+          setItems(prev => [...prev, ...fetchedItems]);
+        }
+        setTotalPages(result.totalPages || 1);
+      }
+    } catch (error) {
+      console.error("Failed to fetch gallery:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchGallery(1);
+  }, []);
+
+  const observer = useRef<IntersectionObserver | null>(null);
+  const lastItemRef = useCallback((node: HTMLDivElement | null) => {
+    if (isLoading) return;
+    if (observer.current) observer.current.disconnect();
+    
+    observer.current = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting && currentPage < totalPages) {
+        const nextPage = currentPage + 1;
+        setCurrentPage(nextPage);
+        fetchGallery(nextPage);
+      }
+    }, { rootMargin: '100px' });
+    
+    if (node) observer.current.observe(node);
+  }, [isLoading, currentPage, totalPages]);
 
   return (
     <div className="pt-20 pb-32 bg-background min-h-screen">
@@ -29,35 +88,76 @@ export default function Galeri() {
           </p>
         </div>
 
-        {/* Masonry-like CSS Grid */}
-        <div className="columns-1 md:columns-2 lg:columns-3 gap-6 space-y-6">
-          {galleryItems.map((item) => (
-            <div
-              key={item.id}
-              className={`relative rounded-3xl overflow-hidden group cursor-pointer break-inside-avoid shadow-sm hover:shadow-2xl transition-all duration-300 ${item.height} ${item.color}`}
-            >
-              <div className="absolute inset-0 bg-gradient-to-t from-header/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+        {items.length === 0 && !isLoading ? (
+          <div className="text-center text-gray-500 py-12">
+            Belum ada foto galeri yang diunggah.
+          </div>
+        ) : (
+          <div className="columns-1 md:columns-2 lg:columns-3 gap-6 space-y-6">
+            {items.map((item, index) => {
+              const isLastItem = index === items.length - 1;
+              return (
+                <div
+                  ref={isLastItem ? lastItemRef : null}
+                  key={`${item.shortcode}-${index}`}
+                  className={`relative rounded-3xl overflow-hidden group cursor-pointer break-inside-avoid shadow-sm hover:shadow-2xl transition-all duration-300 ${item.height} ${item.color}`}
+                  onClick={() => setSelectedImage(item)}
+                >
+                  <img 
+                    src={item["link gambar"]} 
+                    alt={item.judul} 
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-header/90 via-header/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
 
-              <div className="absolute inset-0 flex items-center justify-center">
-                <svg className="w-12 h-12 text-white/50 group-hover:scale-125 transition-transform duration-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-              </div>
+                  <div className="absolute bottom-0 left-0 right-0 p-6 translate-y-6 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 z-10">
+                    <h3 className="text-white font-bold font-poppins text-xl">{item.judul}</h3>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
 
-              <div className="absolute bottom-0 left-0 right-0 p-6 translate-y-6 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
-                <h3 className="text-white font-bold font-poppins text-xl">{item.title}</h3>
-                <p className="text-white/80 text-sm mt-1">Lihat selengkapnya →</p>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="mt-16 text-center">
-          <button className="bg-white border-2 border-primary text-primary hover:bg-primary hover:text-white px-8 py-3 rounded-full font-bold transition-colors duration-300 shadow-md hover:shadow-lg">
-            Muat Lebih Banyak
-          </button>
-        </div>
+        {isLoading && (
+          <div className="mt-12 flex justify-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </div>
+        )}
       </div>
+
+      {/* Lightbox / Modal */}
+      {selectedImage && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 p-4 backdrop-blur-sm"
+          onClick={() => setSelectedImage(null)}
+        >
+          <div className="relative w-full h-full flex flex-col items-center justify-center max-w-6xl">
+            <button 
+              className="absolute top-4 right-4 sm:top-8 sm:right-8 text-white/70 hover:text-white p-2 z-50 bg-black/30 hover:bg-black/50 rounded-full transition-all"
+              onClick={() => setSelectedImage(null)}
+              title="Tutup"
+            >
+              <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            
+            <img 
+              src={selectedImage["link gambar"]} 
+              alt={selectedImage.judul} 
+              className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            />
+            
+            <div className="mt-6 text-center" onClick={(e) => e.stopPropagation()}>
+              <h2 className="text-white text-2xl font-bold font-poppins tracking-wide">
+                {selectedImage.judul}
+              </h2>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
