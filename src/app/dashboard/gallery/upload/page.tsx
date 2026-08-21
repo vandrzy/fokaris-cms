@@ -1,12 +1,12 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ImageIcon, Save, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 
-export default function GalleryUploadPage() {
+function GalleryUploadContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const editShortcode = searchParams.get('edit');
@@ -211,5 +211,17 @@ export default function GalleryUploadPage() {
         </form>
       </div>
     </div>
+  );
+}
+
+export default function GalleryUploadPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    }>
+      <GalleryUploadContent />
+    </Suspense>
   );
 }
