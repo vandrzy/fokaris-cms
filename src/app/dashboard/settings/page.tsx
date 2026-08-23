@@ -20,20 +20,39 @@ export default function SettingsAdminPage() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (formData.newPassword !== formData.confirmPassword) {
       toast.error("Password baru dan konfirmasi tidak cocok!");
       return;
     }
     
-    // UI only mode
     setIsLoading(true);
-    setTimeout(() => {
-      toast.success("Pengaturan UI berhasil disimpan (API belum terhubung)");
+    try {
+      const res = await fetch("/api/auth/password", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          oldPassword: formData.oldPassword,
+          newPassword: formData.newPassword,
+        }),
+      });
+      
+      const data = await res.json();
+      
+      if (res.ok) {
+        toast.success(data.message || "Password berhasil diperbarui!");
+        setFormData({ oldPassword: '', newPassword: '', confirmPassword: '' });
+      } else {
+        toast.error(data.message || "Gagal memperbarui password");
+      }
+    } catch (error) {
+      toast.error("Terjadi kesalahan pada server");
+    } finally {
       setIsLoading(false);
-      setFormData({ oldPassword: '', newPassword: '', confirmPassword: '' });
-    }, 1000);
+    }
   };
 
   return (
