@@ -45,8 +45,13 @@ const MenuBar = ({ editor }: { editor: Editor | null }) => {
         toast.error("Format file tidak valid. Harap unggah gambar.");
         return;
       }
-      const url = URL.createObjectURL(file);
-      editor.chain().focus().setImage({ src: url }).run();
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        if (event.target?.result) {
+          editor.chain().focus().setImage({ src: event.target.result as string }).run();
+        }
+      };
+      reader.readAsDataURL(file);
       if (e.target) e.target.value = '';
     }
   };
@@ -132,15 +137,20 @@ export default function BlogUploadPage() {
         if (!moved && event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files[0]) {
           const dropFile = event.dataTransfer.files[0];
           if (dropFile.type.startsWith('image/')) {
-            const url = URL.createObjectURL(dropFile);
-            const { schema } = view.state;
-            const coordinates = view.posAtCoords({ left: event.clientX, top: event.clientY });
-            const node = schema.nodes.image.create({ src: url });
-            if (coordinates) {
-              const transaction = view.state.tr.insert(coordinates.pos, node);
-              view.dispatch(transaction);
-              return true;
-            }
+            const reader = new FileReader();
+            reader.onload = (e) => {
+              if (e.target?.result) {
+                const { schema } = view.state;
+                const coordinates = view.posAtCoords({ left: event.clientX, top: event.clientY });
+                if (coordinates) {
+                  const node = schema.nodes.image.create({ src: e.target.result as string });
+                  const transaction = view.state.tr.insert(coordinates.pos, node);
+                  view.dispatch(transaction);
+                }
+              }
+            };
+            reader.readAsDataURL(dropFile);
+            return true;
           }
         }
         return false;
