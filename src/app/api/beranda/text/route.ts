@@ -31,6 +31,7 @@ const INITIAL_DATA = [
   { key: 'blog_hero_subtitle', value: 'Ikuti perkembangan terbaru, cerita inspiratif, dan laporan kegiatan dari berbagai program yang telah kami jalankan.', max_length: 150 },
   { key: 'galeri_hero_title', value: 'Galeri Kegiatan', max_length: 50 },
   { key: 'galeri_hero_subtitle', value: 'Jejak langkah nyata kami tergambar dalam momen-momen kebersamaan, perjuangan, dan senyum bahagia mereka yang terbantu.', max_length: 150 },
+  { key: 'galeri_images', value: '[]', max_length: 0 },
 ];
 
 export async function GET() {
@@ -45,7 +46,7 @@ export async function GET() {
     }
 
     let rows = await sheet.getRows();
-    
+
     // Auto-seed missing rows
     const existingKeys = new Set(rows.map((row: any) => row.get('key')));
     const missingRows = INITIAL_DATA.filter(item => !existingKeys.has(item.key));
@@ -92,7 +93,7 @@ export async function PUT(req: Request) {
       await sheet.addRows(missingRows);
       rows = await sheet.getRows();
     }
-    
+
     // First pass: Validation
     console.log("PUT Payload received:", body);
     const keyLabels: Record<string, string> = {
@@ -110,7 +111,8 @@ export async function PUT(req: Request) {
       blog_hero_title: 'Blog Hero Title',
       blog_hero_subtitle: 'Blog Hero Subtitle',
       galeri_hero_title: 'Galeri Hero Title',
-      galeri_hero_subtitle: 'Galeri Hero Subtitle'
+      galeri_hero_subtitle: 'Galeri Hero Subtitle',
+      galeri_images: 'Galeri Images'
     };
 
     for (const row of rows) {
@@ -145,8 +147,8 @@ export async function PUT(req: Request) {
     }
 
     if (!updated) {
-       console.log("No data updated!");
-       return NextResponse.json({ message: "Tidak ada data yang diperbarui. Pastikan key payload sesuai dengan key spreadsheet." }, { status: 400 });
+      console.log("No data updated!");
+      return NextResponse.json({ message: "Tidak ada data yang diperbarui. Pastikan key payload sesuai dengan key spreadsheet." }, { status: 400 });
     }
 
     return NextResponse.json({ message: "Data berhasil diperbarui." }, { status: 200 });

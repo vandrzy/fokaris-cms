@@ -41,6 +41,20 @@ export default function Home() {
   }
   const activeHeroImages = heroImages.length > 0 ? heroImages : cmsData.heroImages;
 
+  let activeGalleryImages = cmsData.galleryData;
+  if (textData?.galeri_images?.value) {
+    try {
+      const parsed = JSON.parse(textData.galeri_images.value);
+      if (parsed && parsed.length > 0) {
+        activeGalleryImages = parsed.map((item: any) => ({
+          id: item.shortcode,
+          src: item["link gambar"],
+          alt: "Galeri Kegiatan"
+        }));
+      }
+    } catch (e) {}
+  }
+
   // Auto-slide effect
   useEffect(() => {
     const timer = setInterval(() => {
@@ -176,8 +190,8 @@ export default function Home() {
           </div>
 
           <div className="relative w-full h-[350px] md:h-[500px] flex items-center justify-center mt-12 mb-4">
-            {cmsData.galleryData.map((item, index) => {
-              const total = cmsData.galleryData.length;
+            {activeGalleryImages.map((item, index) => {
+              const total = activeGalleryImages.length;
               let state = 'hidden';
               if (index === activeGalleryIndex) state = 'active';
               else if (index === (activeGalleryIndex - 1 + total) % total) state = 'prev';
@@ -189,9 +203,9 @@ export default function Home() {
                   className={`absolute transition-all duration-700 ease-in-out group ${state === 'active'
                     ? 'z-20 w-[85%] md:w-[65%] h-full opacity-100 shadow-2xl scale-100 rounded-3xl'
                     : state === 'prev'
-                      ? 'z-10 w-[40%] md:w-[30%] h-[70%] opacity-60 -translate-x-[90%] md:-translate-x-[110%] scale-95 rounded-2xl cursor-pointer hover:opacity-100'
+                      ? 'z-10 w-[40%] md:w-[30%] h-[70%] opacity-60 -translate-x-[90%] md:-translate-x-[110%] scale-95 rounded-2xl cursor-pointer'
                       : state === 'next'
-                        ? 'z-10 w-[40%] md:w-[30%] h-[70%] opacity-60 translate-x-[90%] md:translate-x-[110%] scale-95 rounded-2xl cursor-pointer hover:opacity-100'
+                        ? 'z-10 w-[40%] md:w-[30%] h-[70%] opacity-60 translate-x-[90%] md:translate-x-[110%] scale-95 rounded-2xl cursor-pointer'
                         : 'z-0 w-[40%] md:w-[30%] h-[70%] opacity-0 scale-90 pointer-events-none'
                     }`}
                   onClick={() => {
@@ -203,9 +217,6 @@ export default function Home() {
                     alt={item.alt}
                     className="w-full h-full object-cover rounded-[inherit]"
                   />
-                  <div className={`absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-6 md:p-8 rounded-[inherit] transition-opacity duration-300 ${state === 'active' ? 'opacity-0 group-hover:opacity-100' : 'opacity-0'}`}>
-                    <h3 className="text-white font-bold text-xl md:text-3xl drop-shadow-md translate-y-4 group-hover:translate-y-0 transition-transform duration-300">{item.alt}</h3>
-                  </div>
                 </div>
               );
             })}
@@ -213,7 +224,7 @@ export default function Home() {
 
           {/* Pagination Dots */}
           <div className="flex justify-center items-center gap-3 mt-6 mb-8">
-            {cmsData.galleryData.map((_, idx) => (
+            {activeGalleryImages.map((_, idx) => (
               <button
                 key={idx}
                 onClick={(e) => { e.stopPropagation(); setActiveGalleryIndex(idx); }}

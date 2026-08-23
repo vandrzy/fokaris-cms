@@ -1,52 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Save, Image as ImageIcon } from "lucide-react";
+import { Save, Image as ImageIcon, Plus, Trash2, Check, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
-// Mock data as initial state
-const initialData = {
-  heroTitle: "Membangun Organisasi yang Lebih Mandiri dan Sejahtera",
-  heroSubtitle:
-    "Bergabunglah bersama kami dalam berbagai inisiatif sosial. Jadilah agen perubahan dan ciptakan dampak positif yang berarti.",
-  heroImages: [
-    "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80",
-    "https://images.unsplash.com/photo-1469571486292-0ba58a3f068b?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80",
-    "https://images.unsplash.com/photo-1531206715517-5c0ba140b2b8?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80",
-  ],
-  aboutTitle: "Tentang Organisasi Kami",
-  aboutText:
-    "Misi kami adalah mewujudkan organisasi yang sejahtera, mandiri, dan berbudaya melalui kolaborasi aktif, pemanfaatan potensi yang berkelanjutan, serta pelayanan publik yang transparan.",
-  stats: [
-    { id: 1, value: "103+", label: "TOTAL ANGGOTA" },
-    { id: 2, value: "24", label: "KEGIATAN TERLAKSANA" },
-  ],
-  galleryData: [
-    {
-      id: 1,
-      src: "https://images.unsplash.com/photo-1559027615-cd4628902d4a?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-      alt: "Kegiatan Sosial 1",
-    },
-    {
-      id: 2,
-      src: "https://images.unsplash.com/photo-1528605248644-14dd04022da1?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-      alt: "Kegiatan Pendidikan 2",
-    },
-    {
-      id: 3,
-      src: "https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-      alt: "Kegiatan Lingkungan 3",
-    },
-    {
-      id: 4,
-      src: "https://images.unsplash.com/photo-1511632765486-a01980e01a18?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-      alt: "Komunitas 4",
-    },
-  ],
-};
+type GalleryItem = { shortcode: string; "link gambar": string };
 
 export default function HomeDashboardPage() {
-  const [formData, setFormData] = useState(initialData);
   const [textData, setTextData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -54,15 +14,50 @@ export default function HomeDashboardPage() {
   const [pendingImages, setPendingImages] = useState<Record<number, File>>({});
   const [previewImages, setPreviewImages] = useState<Record<number, string>>({});
 
+  const [selectedGallery, setSelectedGallery] = useState<GalleryItem[]>([]);
+  const [isGalleryModalOpen, setIsGalleryModalOpen] = useState(false);
+  const [galleryPage, setGalleryPage] = useState(1);
+  const [galleryItems, setGalleryItems] = useState<any[]>([]);
+  const [galleryTotalPages, setGalleryTotalPages] = useState(1);
+  const [isLoadingGallery, setIsLoadingGallery] = useState(false);
+
   useEffect(() => {
     fetch('/api/beranda/text')
       .then(res => res.json())
       .then(data => {
         setTextData(data);
+        if (data.galeri_images?.value) {
+           try {
+              setSelectedGallery(JSON.parse(data.galeri_images.value));
+           } catch(e) {}
+        }
         setLoading(false);
       })
       .catch(console.error);
   }, []);
+
+  const fetchGallery = async (page: number) => {
+    setIsLoadingGallery(true);
+    try {
+      const res = await fetch(`/api/galeri?page=${page}&limit=12`);
+      const json = await res.json();
+      if (res.ok) {
+         setGalleryItems(json.data || []);
+         setGalleryTotalPages(json.totalPages || 1);
+         setGalleryPage(page);
+      }
+    } catch(e) {
+      toast.error("Gagal mengambil data galeri");
+    } finally {
+      setIsLoadingGallery(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isGalleryModalOpen && galleryItems.length === 0) {
+      fetchGallery(1);
+    }
+  }, [isGalleryModalOpen]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -102,7 +97,7 @@ export default function HomeDashboardPage() {
 
     if (hasError) {
       setSaving(false);
-      return; // Berhenti jika ada gambar yang gagal diupload
+      return; 
     }
 
     const payload = {
@@ -114,6 +109,7 @@ export default function HomeDashboardPage() {
       stat_1_label: textData?.stat_1_label?.value,
       stat_2_value: textData?.stat_2_value?.value,
       stat_2_label: textData?.stat_2_label?.value,
+      galeri_images: JSON.stringify(selectedGallery),
     };
 
     try {
@@ -178,14 +174,6 @@ export default function HomeDashboardPage() {
   };
 
   if (loading) return <div className="p-8">Memuat data...</div>;
-
-
-
-  const handleGalleryChange = (index: number, field: "src" | "alt", val: string) => {
-    const newGallery = [...formData.galleryData];
-    newGallery[index] = { ...newGallery[index], [field]: val };
-    setFormData({ ...formData, galleryData: newGallery });
-  };
 
   return (
     <div className="max-w-4xl space-y-6">
@@ -345,37 +333,34 @@ export default function HomeDashboardPage() {
 
         {/* GALLERY SECTION */}
         <div className="bg-white p-6 rounded-lg border border-gray-100 shadow-sm">
-          <h3 className="text-lg font-bold font-poppins text-header mb-4 border-b border-gray-50 pb-2">Galeri Kegiatan (Preview)</h3>
+          <div className="flex justify-between items-center mb-4 border-b border-gray-50 pb-2">
+            <h3 className="text-lg font-bold font-poppins text-header">Galeri Kegiatan</h3>
+            <button 
+              type="button" 
+              onClick={() => setIsGalleryModalOpen(true)} 
+              className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+            >
+              <Plus className="w-4 h-4" /> Pilih Gambar
+            </button>
+          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {formData.galleryData.map((gallery, idx) => (
-              <div key={gallery.id} className="p-4 bg-gray-50 rounded-md border border-gray-100 space-y-3">
-                <h4 className="font-semibold text-sm text-header">Gambar Galeri {idx + 1}</h4>
-                <div>
-                  <label className="block font-inter text-xs font-semibold text-body/80 mb-1">Image URL</label>
-                  <div className="flex items-center gap-2">
-                    <div className="p-2 bg-white border border-gray-200 rounded-md text-gray-400">
-                      <ImageIcon className="w-4 h-4" />
-                    </div>
-                    <input
-                      type="text"
-                      className="w-full p-2 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50 text-body text-sm"
-                      value={gallery.src}
-                      onChange={(e) => handleGalleryChange(idx, "src", e.target.value)}
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="block font-inter text-xs font-semibold text-body/80 mb-1">Alt Text</label>
-                  <input
-                    type="text"
-                    className="w-full p-2 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50 text-body text-sm"
-                    value={gallery.alt}
-                    onChange={(e) => handleGalleryChange(idx, "alt", e.target.value)}
-                  />
-                </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {selectedGallery.length > 0 ? selectedGallery.map((item) => (
+              <div key={item.shortcode} className="relative group rounded-lg overflow-hidden border border-gray-200">
+                <img src={item["link gambar"]} alt="Selected" className="w-full h-32 object-cover" />
+                <button 
+                  type="button" 
+                  onClick={() => setSelectedGallery(prev => prev.filter(g => g.shortcode !== item.shortcode))} 
+                  className="absolute top-2 right-2 bg-red-500 text-white p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
               </div>
-            ))}
+            )) : (
+              <div className="col-span-full py-8 text-center text-gray-500 bg-gray-50 rounded-lg border border-dashed border-gray-300">
+                Belum ada gambar galeri yang dipilih.
+              </div>
+            )}
           </div>
         </div>
 
@@ -391,6 +376,81 @@ export default function HomeDashboardPage() {
           </button>
         </div>
       </form>
+
+      {/* GALLERY SELECTION MODAL */}
+      {isGalleryModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+           <div className="bg-white rounded-xl shadow-lg max-w-4xl w-full p-6 space-y-4 flex flex-col max-h-[90vh]">
+              <div className="flex justify-between items-center">
+                 <h3 className="text-xl font-bold">Pilih Gambar Galeri</h3>
+                 <button type="button" onClick={() => setIsGalleryModalOpen(false)} className="text-gray-500 hover:text-gray-700">Tutup</button>
+              </div>
+              <div className="flex-1 overflow-y-auto min-h-[300px]">
+                 {isLoadingGallery ? (
+                    <div className="flex justify-center items-center h-full">
+                      <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                    </div>
+                 ) : (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                       {galleryItems.map(item => {
+                          const isSelected = selectedGallery.some(g => g.shortcode === item.shortcode);
+                          return (
+                             <div 
+                               key={item.shortcode} 
+                               className={`relative cursor-pointer border-2 rounded-lg overflow-hidden ${isSelected ? 'border-primary' : 'border-transparent'}`}
+                               onClick={() => {
+                                  if (isSelected) {
+                                     setSelectedGallery(prev => prev.filter(g => g.shortcode !== item.shortcode));
+                                  } else {
+                                     setSelectedGallery(prev => [...prev, { shortcode: item.shortcode, "link gambar": item["link gambar"] }]);
+                                  }
+                               }}
+                             >
+                               <img src={item["link gambar"]} alt={item.judul} className="w-full h-32 object-cover" />
+                               {isSelected && (
+                                 <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
+                                   <Check className="w-8 h-8 text-white bg-primary rounded-full p-1 shadow" />
+                                 </div>
+                               )}
+                             </div>
+                          );
+                       })}
+                    </div>
+                 )}
+              </div>
+              
+              <div className="flex justify-between items-center pt-4 border-t border-gray-100">
+                 <button 
+                   type="button" 
+                   disabled={galleryPage <= 1 || isLoadingGallery} 
+                   onClick={() => fetchGallery(galleryPage - 1)} 
+                   className="px-4 py-2 border border-gray-200 rounded-md disabled:opacity-50 text-sm font-medium hover:bg-gray-50"
+                 >
+                   Sebelumnya
+                 </button>
+                 <span className="text-sm text-gray-500">Hal {galleryPage} / {galleryTotalPages}</span>
+                 <button 
+                   type="button" 
+                   disabled={galleryPage >= galleryTotalPages || isLoadingGallery} 
+                   onClick={() => fetchGallery(galleryPage + 1)} 
+                   className="px-4 py-2 border border-gray-200 rounded-md disabled:opacity-50 text-sm font-medium hover:bg-gray-50"
+                 >
+                   Berikutnya
+                 </button>
+              </div>
+              
+              <div className="flex justify-end pt-4">
+                 <button 
+                   type="button" 
+                   onClick={() => setIsGalleryModalOpen(false)} 
+                   className="bg-primary hover:bg-primary/90 text-white px-6 py-2 rounded-lg font-medium transition-colors"
+                 >
+                   Selesai Memilih
+                 </button>
+              </div>
+           </div>
+        </div>
+      )}
     </div>
   );
 }
