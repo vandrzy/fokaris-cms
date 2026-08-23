@@ -1,50 +1,95 @@
 "use client";
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { Search, Plus, Edit, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Search, Plus, Edit, Trash2, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 type BlogItem = {
   id: string;
-  coverUrl: string;
-  title: string;
-  uploadDate: string;
+  shortcode: string;
+  "cover link": string;
+  judul: string;
+  "tanggal dupload": string;
 };
-
-// Dummy data
-const dummyBlogData: BlogItem[] = Array.from({ length: 25 }).map((_, i) => ({
-  id: `${i + 1}`,
-  coverUrl: `https://images.unsplash.com/photo-1499750310107-5fef28a66643?q=80&w=150&auto=format&fit=crop&sig=${i}`,
-  title: `Artikel Blog Menarik Tentang Inovasi ke-${i + 1}`,
-  uploadDate: `2026-08-${(i % 30 + 1).toString().padStart(2, '0')}`,
-}));
 
 const ITEMS_PER_PAGE = 5;
 
 export default function BlogAdminPage() {
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [data, setData] = useState<BlogItem[]>([]);
+  const [totalItems, setTotalItems] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isDeleting, setIsDeleting] = useState<string | null>(null);
+  const [deleteShortcode, setDeleteShortcode] = useState<string | null>(null);
 
-  // Filter items based on search query
-  const filteredData = useMemo(() => {
-    return dummyBlogData.filter(item =>
-      item.title.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  }, [searchQuery]);
+  const fetchData = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const queryParams = new URLSearchParams({
+        page: currentPage.toString(),
+        limit: ITEMS_PER_PAGE.toString(),
+      });
+      if (searchQuery) {
+        queryParams.append('nama', searchQuery);
+      }
 
-  // Calculate total pages
-  const totalPages = Math.ceil(filteredData.length / ITEMS_PER_PAGE);
+      const res = await fetch(`/api/blog?${queryParams.toString()}`);
+      const result = await res.json();
+      
+      if (res.ok) {
+        setData(result.data);
+        setTotalItems(result.total);
+        setTotalPages(result.totalPages);
+      } else {
+        toast.error("Gagal memuat data blog.");
+      }
+    } catch (error) {
+      toast.error("Terjadi kesalahan pada server.");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [currentPage, searchQuery]);
 
-  // Reset to first page when searching
-  React.useEffect(() => {
-    setCurrentPage(1);
-  }, [searchQuery]);
+  useEffect(() => {
+    // Debounce search
+    const timer = setTimeout(() => {
+      fetchData();
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [fetchData]);
 
-  // Paginated data
-  const paginatedData = useMemo(() => {
-    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    return filteredData.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-  }, [filteredData, currentPage]);
+  const confirmDelete = async () => {
+    if (!deleteShortcode) return;
+
+    setIsDeleting(deleteShortcode);
+    try {
+      const res = await fetch(`/api/blog?shortcode=${deleteShortcode}`, {
+        method: 'DELETE',
+      });
+      
+      if (res.ok) {
+        toast.success("Blog berhasil dihapus!");
+        if (data.length === 1 && currentPage > 1) {
+          setCurrentPage(prev => prev - 1);
+        } else {
+          fetchData();
+        }
+      } else {
+        const result = await res.json();
+        toast.error(result.message || "Gagal menghapus blog.");
+      }
+    } catch (error) {
+      toast.error("Terjadi kesalahan saat menghapus blog.");
+    } finally {
+      setIsDeleting(null);
+      setDeleteShortcode(null);
+    }
+  };
 
   const handlePrevPage = () => {
     setCurrentPage((prev) => Math.max(1, prev - 1));
@@ -54,9 +99,25 @@ export default function BlogAdminPage() {
     setCurrentPage((prev) => Math.min(totalPages, prev + 1));
   };
 
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+    setCurrentPage(1);
+  };
+
+  const formatDate = (dateString: string) => {
+    if (!dateString) return '-';
+    try {
+      const date = new Date(dateString);
+      return new Intl.DateTimeFormat('id-ID', {
+        dateStyle: 'medium',
+      }).format(date);
+    } catch (e) {
+      return dateString;
+    }
+  };
+
   return (
     <div className="max-w-4xl space-y-6">
-      {/* Header Section */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Manajemen Blog</h1>
@@ -71,7 +132,6 @@ export default function BlogAdminPage() {
         </Link>
       </div>
 
-      {/* Combined Filter & Table Section */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="flex flex-col sm:flex-row gap-4 justify-between items-center p-4 border-b border-gray-100">
           <div className="relative w-full max-w-md">
@@ -83,12 +143,17 @@ export default function BlogAdminPage() {
               className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary sm:text-sm transition-all"
               placeholder="Cari blog berdasarkan judul..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={handleSearchChange}
             />
           </div>
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto relative">
+          {isLoading && (
+            <div className="absolute inset-0 bg-white/50 backdrop-blur-sm z-10 flex items-center justify-center">
+              <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            </div>
+          )}
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
@@ -106,39 +171,46 @@ export default function BlogAdminPage() {
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {paginatedData.length > 0 ? (
-                paginatedData.map((item) => (
-                  <tr key={item.id} className="hover:bg-gray-50 transition-colors">
+            <tbody className="bg-white divide-y divide-gray-200 min-h-[200px]">
+              {data.length > 0 ? (
+                data.map((item) => (
+                  <tr key={item.shortcode} className="hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="h-16 w-16 rounded-md overflow-hidden bg-gray-100 border border-gray-200">
                         <img
-                          src={item.coverUrl}
-                          alt={item.title}
+                          src={item["cover link"]}
+                          alt={item.judul}
                           className="h-full w-full object-cover"
                         />
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="text-sm font-medium text-gray-900 line-clamp-2">{item.title}</div>
+                      <div className="text-sm font-medium text-gray-900 truncate max-w-xs" title={item.judul}>{item.judul}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-600">{item.uploadDate}</div>
+                      <div className="text-sm text-gray-600">{formatDate(item["tanggal dupload"])}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex justify-end gap-2">
-                        <button
+                        <Link
+                          href={`/dashboard/blog/edit/${item.shortcode}`}
                           className="flex items-center gap-1.5 px-3 py-1.5 text-gray-500 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
                           title="Edit"
                         >
                           <Edit className="w-4 h-4" />
                           <span>Edit</span>
-                        </button>
+                        </Link>
                         <button
-                          className="flex items-center gap-1.5 px-3 py-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          onClick={() => setDeleteShortcode(item.shortcode)}
+                          disabled={isDeleting === item.shortcode}
+                          className="flex items-center gap-1.5 px-3 py-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
                           title="Hapus"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          {isDeleting === item.shortcode ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="w-4 h-4" />
+                          )}
                           <span>Hapus</span>
                         </button>
                       </div>
@@ -148,7 +220,7 @@ export default function BlogAdminPage() {
               ) : (
                 <tr>
                   <td colSpan={4} className="px-6 py-8 text-center text-sm text-gray-500">
-                    Tidak ada blog yang ditemukan.
+                    {!isLoading && "Tidak ada blog yang ditemukan."}
                   </td>
                 </tr>
               )}
@@ -156,17 +228,16 @@ export default function BlogAdminPage() {
           </table>
         </div>
 
-        {/* Pagination Section */}
         {totalPages > 0 && (
           <div className="bg-white px-4 sm:px-6 py-4 flex items-center justify-between border-t border-gray-200">
             <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
               <div>
                 <p className="text-sm text-gray-700">
-                  Menampilkan <span className="font-medium">{((currentPage - 1) * ITEMS_PER_PAGE) + 1}</span> hingga{' '}
+                  Menampilkan <span className="font-medium">{((currentPage - 1) * ITEMS_PER_PAGE) + (data.length > 0 ? 1 : 0)}</span> hingga{' '}
                   <span className="font-medium">
-                    {Math.min(currentPage * ITEMS_PER_PAGE, filteredData.length)}
+                    {Math.min(currentPage * ITEMS_PER_PAGE, totalItems)}
                   </span>{' '}
-                  dari <span className="font-medium">{filteredData.length}</span> hasil
+                  dari <span className="font-medium">{totalItems}</span> hasil
                 </p>
               </div>
               <div>
@@ -180,7 +251,6 @@ export default function BlogAdminPage() {
                     <ChevronLeft className="h-5 w-5" aria-hidden="true" />
                   </button>
 
-                  {/* Page numbers */}
                   {[...Array(totalPages)].map((_, idx) => {
                     const page = idx + 1;
                     if (totalPages > 5 && Math.abs(page - currentPage) > 1 && page !== 1 && page !== totalPages) {
@@ -216,7 +286,6 @@ export default function BlogAdminPage() {
               </div>
             </div>
 
-            {/* Mobile Pagination */}
             <div className="flex items-center justify-between w-full sm:hidden">
               <button
                 onClick={handlePrevPage}
@@ -239,6 +308,39 @@ export default function BlogAdminPage() {
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {deleteShortcode && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm transition-opacity">
+          <div className="bg-white rounded-xl shadow-lg max-w-sm w-full p-6 space-y-4">
+            <h3 className="text-lg font-bold text-gray-900">Konfirmasi Hapus</h3>
+            <p className="text-gray-500 text-sm">
+              Apakah Anda yakin ingin menghapus blog ini? Tindakan ini tidak dapat dibatalkan dan blog akan dihapus secara permanen.
+            </p>
+            <div className="flex justify-end gap-3 pt-4">
+              <button
+                onClick={() => setDeleteShortcode(null)}
+                className="px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                disabled={isDeleting !== null}
+              >
+                Batal
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors flex items-center justify-center gap-2"
+                disabled={isDeleting !== null}
+              >
+                {isDeleting !== null ? (
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                ) : (
+                  <Trash2 className="w-4 h-4" />
+                )}
+                Hapus
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

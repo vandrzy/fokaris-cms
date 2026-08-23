@@ -1,68 +1,58 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useTextData } from "@/context/TextContext";
 import Link from "next/link";
-import { Calendar, Search } from "lucide-react";
+import { Calendar, Search, Loader2 } from "lucide-react";
+
+type BlogItem = {
+  id: string;
+  shortcode: string;
+  "cover link": string;
+  judul: string;
+  "tanggal dupload": string;
+  "isi blog": string;
+};
 
 export default function Blog() {
   const textData = useTextData();
   const [searchQuery, setSearchQuery] = useState("");
+  const [posts, setPosts] = useState<BlogItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const posts = [
-    {
-      id: 1,
-      title: "Kegiatan Penanaman 1000 Pohon Bakau di Pesisir Utara",
-      excerpt: "Bulan ini kami bersama lebih dari 200 relawan telah berhasil melaksanakan program penghijauan pesisir.",
-      date: "12 Agustus 2026",
-      category: "Lingkungan",
-      color: "primary"
-    },
-    {
-      id: 2,
-      title: "Pendidikan Gratis Untuk Anak Jalanan Berprestasi",
-      excerpt: "Membuka akses pendidikan seluas-luasnya untuk anak-anak kurang mampu agar dapat menggapai cita-citanya.",
-      date: "5 Agustus 2026",
-      category: "Pendidikan",
-      color: "secondary"
-    },
-    {
-      id: 3,
-      title: "Bantuan Kesehatan Cepat Tanggap Daerah Bencana",
-      excerpt: "Tim medis dan relawan kami telah dikerahkan ke lokasi terdampak untuk memberikan pertolongan pertama.",
-      date: "28 Juli 2026",
-      category: "Sosial",
-      color: "primary"
-    },
-    {
-      id: 4,
-      title: "Workshop Kewirausahaan Pemuda Desa",
-      excerpt: "Mendorong kemandirian ekonomi desa melalui pelatihan UMKM dan pemasaran digital bagi pemuda.",
-      date: "15 Juli 2026",
-      category: "Ekonomi",
-      color: "secondary"
-    },
-    {
-      id: 5,
-      title: "Kampanye Bebas Sampah Plastik di Sekolah Dasar",
-      excerpt: "Edukasi dini pentingnya menjaga kebersihan lingkungan dengan mendaur ulang sampah plastik.",
-      date: "2 Juli 2026",
-      category: "Edukasi",
-      color: "primary"
-    },
-    {
-      id: 6,
-      title: "Donor Darah Nasional: Setetes Darah Sejuta Harapan",
-      excerpt: "Acara donor darah rutin tahunan yang berhasil mengumpulkan lebih dari 500 kantong darah.",
-      date: "20 Juni 2026",
-      category: "Kesehatan",
-      color: "secondary"
+  const fetchPosts = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const res = await fetch(`/api/blog?nama=${searchQuery}`);
+      const result = await res.json();
+      if (res.ok) {
+        setPosts(result.data || []);
+      }
+    } catch (error) {
+      console.error("Gagal memuat blog:", error);
+    } finally {
+      setIsLoading(false);
     }
-  ];
+  }, [searchQuery]);
 
-  const filteredPosts = posts.filter(post =>
-    post.title.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchPosts();
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [fetchPosts]);
+
+  const formatDate = (dateString: string) => {
+    if (!dateString) return '-';
+    try {
+      const date = new Date(dateString);
+      return new Intl.DateTimeFormat('id-ID', {
+        dateStyle: 'long',
+      }).format(date);
+    } catch (e) {
+      return dateString;
+    }
+  };
 
   return (
     <div className="pt-20 pb-32 bg-background min-h-screen">
@@ -91,26 +81,34 @@ export default function Blog() {
           </div>
         </div>
 
-        {filteredPosts.length > 0 ? (
+        {isLoading ? (
+          <div className="flex justify-center items-center py-20">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          </div>
+        ) : posts.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredPosts.map((post) => (
+            {posts.map((post) => (
               <article
-                key={post.id}
+                key={post.shortcode}
                 className="bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 border border-gray-100 flex flex-col h-full group"
               >
-                <div className={`h-48 w-full bg-${post.color}/10 relative overflow-hidden flex items-center justify-center`}>
-                  <div className={`absolute inset-0 bg-gradient-to-br from-${post.color}/20 to-transparent opacity-50`}></div>
+                <div className={`h-48 w-full bg-primary/10 relative overflow-hidden flex items-center justify-center`}>
+                  {post["cover link"] ? (
+                    <img src={post["cover link"]} alt={post.judul} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className={`absolute inset-0 bg-gradient-to-br from-primary/20 to-transparent opacity-50`}></div>
+                  )}
                 </div>
                 <div className="p-8 flex flex-col flex-grow">
                   <div className="flex items-center justify-end mb-4 text-gray-400">
                     <Calendar className="w-4 h-4 mr-1.5" />
-                    <span className="text-sm font-medium">{post.date}</span>
+                    <span className="text-sm font-medium">{formatDate(post["tanggal dupload"])}</span>
                   </div>
-                  <h2 className="text-xl font-bold text-header mb-8 font-poppins group-hover:text-primary transition-colors line-clamp-2" title={post.title}>
-                    {post.title}
+                  <h2 className="text-xl font-bold text-header mb-8 font-poppins group-hover:text-primary transition-colors line-clamp-2" title={post.judul}>
+                    {post.judul}
                   </h2>
                   <Link
-                    href={`/blog/${post.id}`}
+                    href={`/blog/${post.shortcode}`}
                     className="inline-flex items-center text-primary font-semibold hover:text-secondary transition-colors mt-auto"
                   >
                     Baca Selengkapnya

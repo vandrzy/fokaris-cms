@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import {
   ImageIcon,
   Save,
@@ -11,7 +11,8 @@ import {
   Italic,
   List,
   ListOrdered,
-  Image as ImageIconToolbar
+  Image as ImageIconToolbar,
+  Loader2
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -112,11 +113,16 @@ const MenuBar = ({ editor }: { editor: Editor | null }) => {
   );
 };
 
-export default function BlogUploadPage() {
+export default function BlogEditPage() {
   const router = useRouter();
+  const params = useParams();
+  const shortcode = params.shortcode as string;
+
   const [title, setTitle] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   const editor = useEditor({
     extensions: [
@@ -148,6 +154,32 @@ export default function BlogUploadPage() {
     },
   });
 
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const res = await fetch(`/api/blog?shortcode=${shortcode}`);
+        const data = await res.json();
+        
+        if (res.ok && data.data) {
+          setTitle(data.data.judul);
+          setPreviewUrl(data.data["cover link"]);
+          editor?.commands.setContent(data.data["isi blog"]);
+        } else {
+          toast.error("Gagal memuat data blog.");
+          router.push('/dashboard/blog');
+        }
+      } catch (error) {
+        toast.error("Terjadi kesalahan server saat memuat data.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (editor) {
+      fetchData();
+    }
+  }, [shortcode, router, editor]);
+
   const handleCoverUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (!selectedFile) return;
@@ -163,15 +195,8 @@ export default function BlogUploadPage() {
     if (e.target) e.target.value = "";
   };
 
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!file) {
-      toast.error("Silakan pilih gambar cover terlebih dahulu.");
-      return;
-    }
 
     if (!title.trim()) {
       toast.error("Silakan masukkan judul blog.");
@@ -186,31 +211,39 @@ export default function BlogUploadPage() {
 
     setIsSubmitting(true);
     const formData = new FormData();
-    formData.append("cover", file);
+    if (file) formData.append("cover", file);
     formData.append("judul", title);
     formData.append("isi", htmlContent);
 
     try {
-      const res = await fetch("/api/blog", {
-        method: "POST",
+      const res = await fetch(`/api/blog?shortcode=${shortcode}`, {
+        method: "PUT",
         body: formData,
       });
 
       const result = await res.json();
 
       if (res.ok) {
-        toast.success("Blog berhasil dipublikasikan!");
+        toast.success("Blog berhasil diperbarui!");
         router.push('/dashboard/blog');
       } else {
-        toast.error(result.message || "Gagal mengunggah blog.");
+        toast.error(result.message || "Gagal memperbarui blog.");
       }
     } catch (error) {
       console.error(error);
-      toast.error("Terjadi kesalahan server saat mengunggah.");
+      toast.error("Terjadi kesalahan server saat memperbarui.");
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-[400px] flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-4xl space-y-6">
@@ -222,8 +255,8 @@ export default function BlogUploadPage() {
           <ArrowLeft className="w-5 h-5" />
         </Link>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Tambah Blog Baru</h1>
-          <p className="text-sm text-gray-500 mt-1">Buat dan publikasikan artikel blog baru Anda.</p>
+          <h1 className="text-2xl font-bold text-gray-900">Edit Blog</h1>
+          <p className="text-sm text-gray-500 mt-1">Perbarui artikel blog yang sudah ada.</p>
         </div>
       </div>
 
