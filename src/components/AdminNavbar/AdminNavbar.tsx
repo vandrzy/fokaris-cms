@@ -42,7 +42,7 @@ export default function AdminNavbar() {
         >
           <PanelLeft className="w-6 h-6" />
         </button>
-        <h1 className="font-poppins text-xl md:text-2xl font-bold text-header">
+        <h1 className="font-poppins text-xl md:text-2xl font-bold text-primary">
           {getPageTitle()}
         </h1>
       </div>

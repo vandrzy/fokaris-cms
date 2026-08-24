@@ -59,7 +59,7 @@ export default function Sidebar() {
 
       <aside className={`fixed inset-y-0 left-0 z-50 w-[80%] max-w-sm bg-white border-r border-gray-100 flex flex-col transform transition-transform duration-300 ease-in-out lg:relative lg:w-64 lg:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
       <div className="h-16 flex items-center px-6 border-b border-gray-100">
-        <h1 className="font-poppins font-bold text-xl text-primary">AdminPanel</h1>
+        <img src="/logo.png" alt="Admin Logo" className="h-8 w-auto object-contain" />
       </div>
 
       <div className="flex-1 overflow-y-auto py-4">
