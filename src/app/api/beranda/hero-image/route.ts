@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { v2 as cloudinary } from "cloudinary";
 import { GoogleSpreadsheet } from "google-spreadsheet";
 import { JWT } from 'google-auth-library';
+import { requireAuth } from "@/lib/auth";
+import { handleApiError, ApiError } from "@/lib/api-error";
 
 // Config dipindahkan ke dalam handler untuk memastikan env ter-load
 
@@ -31,6 +33,7 @@ function getPublicIdFromUrl(url: string) {
 
 export async function POST(req: Request) {
   try {
+    await requireAuth();
     cloudinary.config({
       cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
       api_key: process.env.CLOUDINARY_API_KEY,
@@ -42,15 +45,15 @@ export async function POST(req: Request) {
     const index = formData.get("index") as string;
 
     if (!file) {
-      return NextResponse.json({ message: "File tidak ditemukan" }, { status: 400 });
+      throw new ApiError(400, "File tidak ditemukan");
     }
 
     if (!['1', '2', '3'].includes(index)) {
-      return NextResponse.json({ message: "Index tidak valid (harus 1, 2, atau 3)" }, { status: 400 });
+      throw new ApiError(400, "Index tidak valid (harus 1, 2, atau 3)");
     }
 
     if (!file.type.startsWith("image/")) {
-      return NextResponse.json({ message: "Format file tidak valid. Harap unggah gambar." }, { status: 400 });
+      throw new ApiError(400, "Format file tidak valid. Harap unggah gambar.");
     }
 
     const bytes = await file.arrayBuffer();
@@ -74,7 +77,7 @@ export async function POST(req: Request) {
     const doc = await getDoc();
     const sheet = doc.sheetsByTitle["beranda"];
     if (!sheet) {
-      return NextResponse.json({ message: "Sheet beranda tidak ditemukan" }, { status: 500 });
+      throw new ApiError(500, "Sheet beranda tidak ditemukan");
     }
 
     const rows = await sheet.getRows();
@@ -94,9 +97,6 @@ export async function POST(req: Request) {
 
     if (!rowFound) {
       await sheet.addRow({ key: keyToUpdate, value: secureUrl, max_length: 0 });
-      console.log(`Created new row for ${keyToUpdate}`);
-    } else {
-      console.log(`Updated existing row for ${keyToUpdate} with ${secureUrl}`);
     }
 
     // Cleanup old image from Cloudinary
@@ -105,7 +105,6 @@ export async function POST(req: Request) {
       if (publicId) {
         try {
           await cloudinary.uploader.destroy(publicId);
-          console.log(`Deleted old image from Cloudinary: ${publicId}`);
         } catch (err) {
           console.error("Failed to delete old image from Cloudinary:", err);
         }
@@ -114,11 +113,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ message: "Gambar berhasil diunggah", url: secureUrl }, { status: 200 });
 
-  } catch (error: any) {
-    console.error("API Hero Image Upload Error:", error);
-    if (error && typeof error === 'object') {
-      console.error(JSON.stringify(error, null, 2));
-    }
-    return NextResponse.json({ message: "Terjadi kesalahan server saat mengunggah gambar" }, { status: 500 });
+  } catch (error: unknown) {
+    return handleApiError(error);
   }
 }

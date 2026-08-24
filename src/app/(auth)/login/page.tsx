@@ -30,8 +30,6 @@ export default function LoginPage() {
       if (!res.ok) {
         setErrorMsg(data.message || "Login gagal");
       } else {
-        // Simpan token (bisa juga disimpan di cookies melalui cara lain, tapi untuk kesederhanaan, kita taruh di localStorage atau Document Cookie)
-        document.cookie = `token=${data.token}; path=/; max-age=7200; SameSite=Strict`;
         router.push("/dashboard");
       }
     } catch (err) {

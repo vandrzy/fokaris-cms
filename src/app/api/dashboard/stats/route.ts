@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { GoogleSpreadsheet } from "google-spreadsheet";
 import { JWT } from 'google-auth-library';
 import { v2 as cloudinary } from "cloudinary";
+import { requireAuth } from "@/lib/auth";
+import { handleApiError } from "@/lib/api-error";
 
 async function getDoc() {
   const serviceAccountAuth = new JWT({
@@ -16,6 +18,7 @@ async function getDoc() {
 
 export async function GET() {
   try {
+    await requireAuth();
     const doc = await getDoc();
 
     // 1. Get Blog Count
@@ -64,11 +67,7 @@ export async function GET() {
       },
       { status: 200 }
     );
-  } catch (error) {
-    console.error("Dashboard Stats API Error:", error);
-    return NextResponse.json(
-      { message: "Terjadi kesalahan pada server saat mengambil statistik" },
-      { status: 500 }
-    );
+  } catch (error: unknown) {
+    return handleApiError(error);
   }
 }

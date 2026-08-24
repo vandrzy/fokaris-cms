@@ -3,6 +3,8 @@ import { v2 as cloudinary } from "cloudinary";
 import { GoogleSpreadsheet } from "google-spreadsheet";
 import { JWT } from "google-auth-library";
 import crypto from "crypto";
+import { requireAuth } from "@/lib/auth";
+import { handleApiError, ApiError } from "@/lib/api-error";
 
 async function getDoc() {
   const serviceAccountAuth = new JWT({
@@ -47,7 +49,7 @@ export async function GET(req: Request) {
     const doc = await getDoc();
     const sheet = doc.sheetsByTitle["galeri"];
     if (!sheet) {
-      return NextResponse.json({ message: "Sheet galeri tidak ditemukan" }, { status: 500 });
+      throw new ApiError(500, "Sheet galeri tidak ditemukan");
     }
 
     const rows = await sheet.getRows();
@@ -55,7 +57,7 @@ export async function GET(req: Request) {
     if (shortcode) {
       const row = rows.find((r) => r.get("shortcode") === shortcode);
       if (!row) {
-        return NextResponse.json({ message: "Data tidak ditemukan" }, { status: 404 });
+        throw new ApiError(404, "Data tidak ditemukan");
       }
       return NextResponse.json({
         data: {
@@ -97,27 +99,27 @@ export async function GET(req: Request) {
       totalPages: Math.ceil(allData.length / limit),
     }, { status: 200 });
 
-  } catch (error: any) {
-    console.error("GET Galeri Error:", error);
-    return NextResponse.json({ message: "Terjadi kesalahan pada server" }, { status: 500 });
+  } catch (error: unknown) {
+    return handleApiError(error);
   }
 }
 
 export async function POST(req: Request) {
   try {
+    await requireAuth();
     configCloudinary();
     const formData = await req.formData();
     const file = formData.get("gambar") as File | null;
     const judul = formData.get("judul") as string | null;
 
     if (!file || !judul) {
-      return NextResponse.json({ message: "Gambar dan judul wajib diisi" }, { status: 400 });
+      throw new ApiError(400, "Gambar dan judul wajib diisi");
     }
     if (judul.length > 20) {
-      return NextResponse.json({ message: "Judul gambar maksimal 20 karakter" }, { status: 400 });
+      throw new ApiError(400, "Judul gambar maksimal 20 karakter");
     }
     if (!file.type.startsWith("image/")) {
-      return NextResponse.json({ message: "Format file tidak valid. Harap unggah gambar." }, { status: 400 });
+      throw new ApiError(400, "Format file tidak valid. Harap unggah gambar.");
     }
 
     // 1. Generate ID & shortcode
@@ -165,20 +167,20 @@ export async function POST(req: Request) {
     });
 
     return NextResponse.json({ message: "Berhasil menambahkan data galeri", shortcode }, { status: 201 });
-  } catch (error: any) {
-    console.error("POST Galeri Error:", error);
-    return NextResponse.json({ message: "Terjadi kesalahan server saat mengunggah gambar" }, { status: 500 });
+  } catch (error: unknown) {
+    return handleApiError(error);
   }
 }
 
 export async function PUT(req: Request) {
   try {
+    await requireAuth();
     configCloudinary();
     const url = new URL(req.url);
     const shortcode = url.searchParams.get("shortcode");
 
     if (!shortcode) {
-      return NextResponse.json({ message: "Shortcode wajib diisi" }, { status: 400 });
+      throw new ApiError(400, "Shortcode wajib diisi");
     }
 
     const formData = await req.formData();
@@ -186,13 +188,13 @@ export async function PUT(req: Request) {
     const judul = formData.get("judul") as string | null;
 
     if (judul && judul.length > 20) {
-      return NextResponse.json({ message: "Judul gambar maksimal 20 karakter" }, { status: 400 });
+      throw new ApiError(400, "Judul gambar maksimal 20 karakter");
     }
 
     const doc = await getDoc();
     const sheet = doc.sheetsByTitle["galeri"];
     if (!sheet) {
-      return NextResponse.json({ message: "Sheet galeri tidak ditemukan" }, { status: 500 });
+      throw new ApiError(500, "Sheet galeri tidak ditemukan");
     }
 
     await sheet.loadHeaderRow();
@@ -204,7 +206,7 @@ export async function PUT(req: Request) {
     const row = rows.find((r) => r.get("shortcode") === shortcode);
 
     if (!row) {
-      return NextResponse.json({ message: "Data tidak ditemukan" }, { status: 404 });
+      throw new ApiError(404, "Data tidak ditemukan");
     }
 
     let secureUrl = row.get("link gambar");
@@ -251,33 +253,33 @@ export async function PUT(req: Request) {
     await row.save();
 
     return NextResponse.json({ message: "Berhasil mengupdate data galeri" }, { status: 200 });
-  } catch (error: any) {
-    console.error("PUT Galeri Error:", error);
-    return NextResponse.json({ message: "Terjadi kesalahan server saat mengupdate data" }, { status: 500 });
+  } catch (error: unknown) {
+    return handleApiError(error);
   }
 }
 
 export async function DELETE(req: Request) {
   try {
+    await requireAuth();
     configCloudinary();
     const url = new URL(req.url);
     const shortcode = url.searchParams.get("shortcode");
 
     if (!shortcode) {
-      return NextResponse.json({ message: "Shortcode wajib diisi" }, { status: 400 });
+      throw new ApiError(400, "Shortcode wajib diisi");
     }
 
     const doc = await getDoc();
     const sheet = doc.sheetsByTitle["galeri"];
     if (!sheet) {
-      return NextResponse.json({ message: "Sheet galeri tidak ditemukan" }, { status: 500 });
+      throw new ApiError(500, "Sheet galeri tidak ditemukan");
     }
 
     const rows = await sheet.getRows();
     const row = rows.find((r) => r.get("shortcode") === shortcode);
 
     if (!row) {
-      return NextResponse.json({ message: "Data tidak ditemukan" }, { status: 404 });
+      throw new ApiError(404, "Data tidak ditemukan");
     }
 
     const linkGambar = row.get("link gambar");
@@ -292,8 +294,7 @@ export async function DELETE(req: Request) {
     await row.delete();
 
     return NextResponse.json({ message: "Berhasil menghapus data galeri" }, { status: 200 });
-  } catch (error: any) {
-    console.error("DELETE Galeri Error:", error);
-    return NextResponse.json({ message: "Terjadi kesalahan server saat menghapus data" }, { status: 500 });
+  } catch (error: unknown) {
+    return handleApiError(error);
   }
 }

@@ -1,7 +1,7 @@
 // scripts/seed-admin.js
 const { GoogleSpreadsheet } = require('google-spreadsheet');
 require('dotenv').config({ path: '.env.local' });
-
+const bcrypt = require('bcryptjs');
 const { JWT } = require('google-auth-library');
 
 async function seedAdmin() {
@@ -17,7 +17,6 @@ async function seedAdmin() {
     await doc.loadInfo();
     console.log(`Terhubung ke dokumen: ${doc.title}`);
 
-    // Periksa apakah sheet 'akun' sudah ada
     let akunSheet = doc.sheetsByTitle['akun'];
 
     if (!akunSheet) {
@@ -27,15 +26,22 @@ async function seedAdmin() {
       console.log('Sheet "akun" ditemukan.');
     }
 
-    // Cek apakah admin sudah ada untuk menghindari duplikat
     const rows = await akunSheet.getRows();
-    const adminExists = rows.find(r => r.username === 'admin');
+    const adminRow = rows.find(r => r.get('username') === 'admin');
 
-    if (adminExists) {
-      console.log('Akun admin sudah ada di spreadsheet. Tidak ada yang ditambahkan.');
+    const pass = process.env.SEED_ADMIN_PASSWORD;
+    if (!pass) throw new Error("SEED_ADMIN_PASSWORD wajib di-set");
+    
+    const hashedPass = await bcrypt.hash(pass, 12);
+
+    if (adminRow) {
+      console.log('Akun admin sudah ada di spreadsheet. Melakukan migrasi/reset password...');
+      adminRow.set('password', hashedPass);
+      await adminRow.save();
+      console.log('Password admin berhasil direset dengan bcrypt hash!');
     } else {
       console.log('Menambahkan akun admin...');
-      await akunSheet.addRow({ username: 'admin', password: 'adminadmin' });
+      await akunSheet.addRow({ username: 'admin', password: hashedPass });
       console.log('Akun admin berhasil ditambahkan!');
     }
 

@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Calendar, ArrowLeft, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import DOMPurify from "isomorphic-dompurify";
 
 type BlogData = {
   judul: string;
@@ -104,7 +105,7 @@ export default function BlogDetail() {
 
             <div 
               className="prose prose-lg max-w-none text-gray-700"
-              dangerouslySetInnerHTML={{ __html: data["isi blog"] }}
+              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(data["isi blog"] || "") }}
             />
           </div>
         </article>

@@ -42,8 +42,8 @@ export default function Sidebar() {
   const router = useRouter();
   const { isOpen, setIsOpen } = useSidebar();
 
-  const handleLogout = () => {
-    document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+  const handleLogout = async () => {
+    await fetch("/api/auth/logout", { method: "POST" });
     window.location.href = "/login";
   };
 

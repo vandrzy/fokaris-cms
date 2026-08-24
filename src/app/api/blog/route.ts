@@ -3,6 +3,9 @@ import { v2 as cloudinary } from "cloudinary";
 import { GoogleSpreadsheet } from "google-spreadsheet";
 import { JWT } from "google-auth-library";
 import crypto from "crypto";
+import { requireAuth } from "@/lib/auth";
+import DOMPurify from "isomorphic-dompurify";
+import { handleApiError, ApiError } from "@/lib/api-error";
 
 async function getDoc() {
   const serviceAccountAuth = new JWT({
@@ -83,6 +86,11 @@ async function processBase64Images(html: string): Promise<string> {
   return processedHtml;
 }
 
+const purifyConfig = {
+  ALLOWED_TAGS: ["p","br","strong","em","u","s","h1","h2","h3","h4","ul","ol","li","blockquote","a","img","code","pre","span"],
+  ALLOWED_ATTR: ["href","src","alt","title","target","rel","class"],
+};
+
 export async function GET(req: Request) {
   try {
     const url = new URL(req.url);
@@ -102,7 +110,7 @@ export async function GET(req: Request) {
     if (shortcode) {
       const row = rows.find((r) => r.get("shortcode") === shortcode);
       if (!row) {
-        return NextResponse.json({ message: "Data tidak ditemukan" }, { status: 404 });
+        throw new ApiError(404, "Data tidak ditemukan");
       }
       return NextResponse.json({
         data: {
@@ -147,14 +155,14 @@ export async function GET(req: Request) {
       totalPages: Math.ceil(allData.length / limit),
     }, { status: 200 });
 
-  } catch (error: any) {
-    console.error("GET Blog Error:", error);
-    return NextResponse.json({ message: "Terjadi kesalahan pada server" }, { status: 500 });
+  } catch (error: unknown) {
+    return handleApiError(error);
   }
 }
 
 export async function POST(req: Request) {
   try {
+    await requireAuth();
     configCloudinary();
     const formData = await req.formData();
     const file = formData.get("cover") as File | null;
@@ -162,11 +170,11 @@ export async function POST(req: Request) {
     const isi = formData.get("isi") as string | null;
 
     if (!file || !judul || !isi) {
-      return NextResponse.json({ message: "Cover, judul, dan isi wajib diisi" }, { status: 400 });
+      throw new ApiError(400, "Cover, judul, dan isi wajib diisi");
     }
 
     if (!file.type.startsWith("image/")) {
-      return NextResponse.json({ message: "Format file cover tidak valid. Harap unggah gambar." }, { status: 400 });
+      throw new ApiError(400, "Format file cover tidak valid. Harap unggah gambar.");
     }
 
     // 1. Generate ID & shortcode
@@ -181,6 +189,9 @@ export async function POST(req: Request) {
 
     // 3. Process base64 images in "isi" and upload to Cloudinary
     const processedIsi = await processBase64Images(isi);
+    
+    // 3b. Sanitize HTML
+    const cleanIsi = DOMPurify.sanitize(processedIsi, purifyConfig);
 
     // 4. Save to Google Sheets
     const doc = await getDoc();
@@ -197,26 +208,26 @@ export async function POST(req: Request) {
       id,
       shortcode,
       judul,
-      "isi blog": processedIsi,
+      "isi blog": cleanIsi,
       "tanggal dupload": tanggalDupload,
       "cover link": secureCoverUrl,
     });
 
     return NextResponse.json({ message: "Berhasil menambahkan blog", shortcode }, { status: 201 });
-  } catch (error: any) {
-    console.error("POST Blog Error:", error);
-    return NextResponse.json({ message: "Terjadi kesalahan server" }, { status: 500 });
+  } catch (error: unknown) {
+    return handleApiError(error);
   }
 }
 
 export async function PUT(req: Request) {
   try {
+    await requireAuth();
     configCloudinary();
     const url = new URL(req.url);
     const shortcode = url.searchParams.get("shortcode");
 
     if (!shortcode) {
-      return NextResponse.json({ message: "Shortcode wajib diisi" }, { status: 400 });
+      throw new ApiError(400, "Shortcode wajib diisi");
     }
 
     const formData = await req.formData();
@@ -227,14 +238,14 @@ export async function PUT(req: Request) {
     const doc = await getDoc();
     const sheet = doc.sheetsByTitle["blog"];
     if (!sheet) {
-      return NextResponse.json({ message: "Sheet blog tidak ditemukan" }, { status: 500 });
+      throw new ApiError(500, "Sheet blog tidak ditemukan");
     }
 
     const rows = await sheet.getRows();
     const row = rows.find((r) => r.get("shortcode") === shortcode);
 
     if (!row) {
-      return NextResponse.json({ message: "Data tidak ditemukan" }, { status: 404 });
+      throw new ApiError(404, "Data tidak ditemukan");
     }
 
     let secureCoverUrl = row.get("cover link");
@@ -268,6 +279,7 @@ export async function PUT(req: Request) {
       
       // Process new images (uploads base64)
       processedIsi = await processBase64Images(isi);
+      processedIsi = DOMPurify.sanitize(processedIsi, purifyConfig);
       
       // Find images currently in new content
       const newImages = extractCloudinaryPublicIds(processedIsi);
@@ -286,39 +298,37 @@ export async function PUT(req: Request) {
     if (judul) row.set("judul", judul);
     row.set("isi blog", processedIsi);
     row.set("cover link", secureCoverUrl);
-    // Note: Do not update tanggal dupload on edit based on typical CMS, or do it if required. 
-    // Spec doesn't say "tanggal diubah", only "tanggal dupload", so we leave it as is.
     
     await row.save();
 
     return NextResponse.json({ message: "Berhasil mengupdate blog" }, { status: 200 });
-  } catch (error: any) {
-    console.error("PUT Blog Error:", error);
-    return NextResponse.json({ message: "Terjadi kesalahan server saat mengupdate data" }, { status: 500 });
+  } catch (error: unknown) {
+    return handleApiError(error);
   }
 }
 
 export async function DELETE(req: Request) {
   try {
+    await requireAuth();
     configCloudinary();
     const url = new URL(req.url);
     const shortcode = url.searchParams.get("shortcode");
 
     if (!shortcode) {
-      return NextResponse.json({ message: "Shortcode wajib diisi" }, { status: 400 });
+      throw new ApiError(400, "Shortcode wajib diisi");
     }
 
     const doc = await getDoc();
     const sheet = doc.sheetsByTitle["blog"];
     if (!sheet) {
-      return NextResponse.json({ message: "Sheet blog tidak ditemukan" }, { status: 500 });
+      throw new ApiError(500, "Sheet blog tidak ditemukan");
     }
 
     const rows = await sheet.getRows();
     const row = rows.find((r) => r.get("shortcode") === shortcode);
 
     if (!row) {
-      return NextResponse.json({ message: "Data tidak ditemukan" }, { status: 404 });
+      throw new ApiError(404, "Data tidak ditemukan");
     }
 
     // Delete Cover
@@ -350,8 +360,7 @@ export async function DELETE(req: Request) {
     await row.delete();
 
     return NextResponse.json({ message: "Berhasil menghapus blog" }, { status: 200 });
-  } catch (error: any) {
-    console.error("DELETE Blog Error:", error);
-    return NextResponse.json({ message: "Terjadi kesalahan server saat menghapus data" }, { status: 500 });
+  } catch (error: unknown) {
+    return handleApiError(error);
   }
 }

@@ -1,18 +1,18 @@
 import { NextResponse } from "next/server";
 import { GoogleSpreadsheet } from "google-spreadsheet";
 import jwt from "jsonwebtoken";
-
+import bcrypt from "bcryptjs";
+import { cookies } from "next/headers";
 import { JWT } from 'google-auth-library';
+import { getJwtSecret } from "@/lib/env";
+import { handleApiError, ApiError } from "@/lib/api-error";
 
 export async function POST(req: Request) {
   try {
     const { username, password } = await req.json();
 
     if (!username || !password) {
-      return NextResponse.json(
-        { message: "username atau password salah" },
-        { status: 401 }
-      );
+      throw new ApiError(401, "username atau password salah");
     }
 
     const serviceAccountAuth = new JWT({
@@ -25,52 +25,51 @@ export async function POST(req: Request) {
 
     await doc.loadInfo();
 
-    // Look for 'akun' sheet
     let authSheet = doc.sheetsByTitle["akun"];
     
-    // Fallback if sheet is not created yet (for robust early dev)
     if (!authSheet) {
-      return NextResponse.json(
-        { message: "username atau password salah" },
-        { status: 401 }
-      );
+      throw new ApiError(401, "username atau password salah");
     }
 
     const rows = await authSheet.getRows();
-    let userFound = false;
+    let userRow = null;
 
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
-      // Compare values using .get() for google-spreadsheet v4+
-      if (row.get('username') === username && row.get('password') === password) {
-        userFound = true;
+      if (row.get('username') === username) {
+        userRow = row;
         break;
       }
     }
 
-    if (!userFound) {
-      return NextResponse.json(
-        { message: "username atau password salah" },
-        { status: 401 }
-      );
+    if (!userRow) {
+      throw new ApiError(401, "username atau password salah");
     }
 
-    // JWT Creation
-    const secret = process.env.JWT_SECRET || "default_fokaris_secret_123";
+    const storedHash = userRow.get('password');
+    // If it's the first time and not hashed (for safety during migration)
+    const isMatch = storedHash.startsWith("$2a$") || storedHash.startsWith("$2b$") 
+      ? await bcrypt.compare(password, storedHash)
+      : storedHash === password;
+
+    if (!isMatch) {
+      throw new ApiError(401, "username atau password salah");
+    }
+
+    const secret = getJwtSecret();
     const token = jwt.sign({ username }, secret, { expiresIn: "2h" });
 
-    // Return the response with token
-    return NextResponse.json(
-      { token },
-      { status: 200 }
-    );
+    (await cookies()).set("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      path: "/",
+      maxAge: 60 * 60 * 2, // 2 jam
+    });
+
+    return NextResponse.json({ success: true }, { status: 200 });
 
   } catch (error) {
-    console.error("Login API Error:", error);
-    // Generic failure
-    return NextResponse.json(
-      { message: "Terjadi kesalahan pada server" },
-      { status: 500 }
-    );
+    return handleApiError(error);
   }
 }

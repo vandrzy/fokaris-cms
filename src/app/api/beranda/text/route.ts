@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { GoogleSpreadsheet } from "google-spreadsheet";
 import { JWT } from 'google-auth-library';
+import { requireAuth } from "@/lib/auth";
+import { handleApiError } from "@/lib/api-error";
 
 // Helper function to get authenticated doc
 async function getDoc() {
@@ -67,14 +69,14 @@ export async function GET() {
     }
 
     return NextResponse.json(data, { status: 200 });
-  } catch (error) {
-    console.error("API Beranda GET Error:", error);
-    return NextResponse.json({ message: "Terjadi kesalahan server" }, { status: 500 });
+  } catch (error: unknown) {
+    return handleApiError(error);
   }
 }
 
 export async function PUT(req: Request) {
   try {
+    await requireAuth();
     const body = await req.json();
     const doc = await getDoc();
     let sheet = doc.sheetsByTitle["beranda"];
@@ -95,7 +97,6 @@ export async function PUT(req: Request) {
     }
 
     // First pass: Validation
-    console.log("PUT Payload received:", body);
     const keyLabels: Record<string, string> = {
       hero_title: 'Hero Title',
       hero_subtitle: 'Hero Subtitle',
@@ -120,12 +121,9 @@ export async function PUT(req: Request) {
       const maxLength = parseInt(row.get('max_length') || '0', 10);
       const newValue = body[key];
 
-      console.log(`Checking row key: ${key}, maxLength: ${maxLength}, newValue:`, newValue);
-
       if (newValue !== undefined) {
         const strValue = String(newValue);
         if (maxLength > 0 && strValue.length > maxLength) {
-          console.log(`Validation failed! ${strValue.length} > ${maxLength}`);
           const label = keyLabels[key] || key;
           return NextResponse.json(
             { message: `${label} maksimal ${maxLength} karakter. (Anda mengirim ${strValue.length} karakter)` },
@@ -147,14 +145,12 @@ export async function PUT(req: Request) {
     }
 
     if (!updated) {
-      console.log("No data updated!");
       return NextResponse.json({ message: "Tidak ada data yang diperbarui. Pastikan key payload sesuai dengan key spreadsheet." }, { status: 400 });
     }
 
     return NextResponse.json({ message: "Data berhasil diperbarui." }, { status: 200 });
 
-  } catch (error) {
-    console.error("API Beranda PUT Error:", error);
-    return NextResponse.json({ message: "Terjadi kesalahan server" }, { status: 500 });
+  } catch (error: unknown) {
+    return handleApiError(error);
   }
 }

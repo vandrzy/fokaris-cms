@@ -1,52 +1,20 @@
 import { NextResponse } from "next/server";
 import { GoogleSpreadsheet } from "google-spreadsheet";
 import { JWT } from 'google-auth-library';
-import { cookies } from "next/headers";
-import jwt from "jsonwebtoken";
+import bcrypt from "bcryptjs";
+import { requireAuth } from "@/lib/auth";
+import { handleApiError, ApiError } from "@/lib/api-error";
 
 export async function PUT(req: Request) {
   try {
     const { oldPassword, newPassword } = await req.json();
 
     if (!oldPassword || !newPassword) {
-      return NextResponse.json(
-        { message: "Password lama dan baru wajib diisi" },
-        { status: 400 }
-      );
+      throw new ApiError(400, "Password lama dan baru wajib diisi");
     }
 
-    // 1. Get token from cookies
-    const cookieStore = await cookies();
-    const token = cookieStore.get('token')?.value;
+    const { username } = await requireAuth();
 
-    if (!token) {
-      return NextResponse.json(
-        { message: "Tidak ada akses (Unauthorized)" },
-        { status: 401 }
-      );
-    }
-
-    // 2. Verify and decode token
-    const secret = process.env.JWT_SECRET || "default_fokaris_secret_123";
-    let decoded: any;
-    try {
-      decoded = jwt.verify(token, secret);
-    } catch (err) {
-      return NextResponse.json(
-        { message: "Token tidak valid atau kedaluwarsa" },
-        { status: 401 }
-      );
-    }
-
-    const username = decoded.username;
-    if (!username) {
-      return NextResponse.json(
-        { message: "Username tidak ditemukan dalam token" },
-        { status: 401 }
-      );
-    }
-
-    // 3. Connect to Google Sheets
     const serviceAccountAuth = new JWT({
       email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
       key: process.env.GOOGLE_PRIVATE_KEY!.replace(/\\n/g, "\n"),
@@ -58,10 +26,7 @@ export async function PUT(req: Request) {
 
     const authSheet = doc.sheetsByTitle["akun"];
     if (!authSheet) {
-      return NextResponse.json(
-        { message: "Konfigurasi akun tidak ditemukan" },
-        { status: 500 }
-      );
+      throw new ApiError(500, "Konfigurasi akun tidak ditemukan");
     }
 
     const rows = await authSheet.getRows();
@@ -75,22 +40,20 @@ export async function PUT(req: Request) {
     }
 
     if (!userRow) {
-      return NextResponse.json(
-        { message: "Akun tidak ditemukan" },
-        { status: 404 }
-      );
+      throw new ApiError(404, "Akun tidak ditemukan");
     }
 
-    // 4. Validate old password
-    if (userRow.get('password') !== oldPassword) {
-      return NextResponse.json(
-        { message: "Password lama salah" },
-        { status: 400 }
-      );
+    const storedHash = userRow.get('password');
+    const isMatch = storedHash.startsWith("$2a$") || storedHash.startsWith("$2b$") 
+      ? await bcrypt.compare(oldPassword, storedHash)
+      : storedHash === oldPassword;
+
+    if (!isMatch) {
+      throw new ApiError(400, "Password lama salah");
     }
 
-    // 5. Update to new password
-    userRow.set('password', newPassword);
+    const newHash = await bcrypt.hash(newPassword, 12);
+    userRow.set('password', newHash);
     await userRow.save();
 
     return NextResponse.json(
@@ -99,10 +62,6 @@ export async function PUT(req: Request) {
     );
 
   } catch (error) {
-    console.error("Password API Error:", error);
-    return NextResponse.json(
-      { message: "Terjadi kesalahan pada server" },
-      { status: 500 }
-    );
+    return handleApiError(error);
   }
 }

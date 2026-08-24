@@ -1,45 +1,32 @@
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from "next/server";
+import { jwtVerify } from "jose";
+import { getJwtSecret } from "@/lib/env";
 
-export function middleware(request: NextRequest) {
-  const token = request.cookies.get('token')?.value;
-
-  let isTokenValid = false;
-
-  if (token) {
-    try {
-      const payloadBase64 = token.split('.')[1];
-      const base64 = payloadBase64.replace(/-/g, '+').replace(/_/g, '/');
-      const decodedJson = atob(base64);
-      const decoded = JSON.parse(decodedJson);
-      // Validasi waktu kedaluwarsa token
-      if (decoded.exp && Date.now() < decoded.exp * 1000) {
-        isTokenValid = true;
-      }
-    } catch (e) {
-      isTokenValid = false;
-    }
+async function isTokenValid(token: string | undefined): Promise<boolean> {
+  if (!token) return false;
+  try {
+    const secret = new TextEncoder().encode(getJwtSecret());
+    await jwtVerify(token, secret);
+    return true;
+  } catch {
+    return false;
   }
+}
 
-  // Check if trying to access dashboard
-  if (request.nextUrl.pathname.startsWith('/dashboard')) {
-    if (!isTokenValid) {
-      const response = NextResponse.redirect(new URL('/login', request.url));
-      response.cookies.delete('token');
-      return response;
-    }
+export async function middleware(request: NextRequest) {
+  const token = request.cookies.get("token")?.value;
+  const valid = await isTokenValid(token);
+  const { pathname } = request.nextUrl;
+
+  if (pathname.startsWith("/dashboard") && !valid) {
+    return NextResponse.redirect(new URL("/login", request.url));
   }
-
-  // Check if trying to access login
-  if (request.nextUrl.pathname === '/login') {
-    if (isTokenValid) {
-      return NextResponse.redirect(new URL('/dashboard', request.url));
-    }
+  if (pathname === "/login" && valid) {
+    return NextResponse.redirect(new URL("/dashboard", request.url));
   }
-
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/login'],
+  matcher: ["/dashboard/:path*", "/login"],
 };
