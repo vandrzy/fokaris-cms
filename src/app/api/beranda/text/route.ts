@@ -49,13 +49,7 @@ export async function GET() {
 
     let rows = await sheet.getRows();
 
-    // Auto-seed missing rows
-    const existingKeys = new Set(rows.map((row: any) => row.get('key')));
-    const missingRows = INITIAL_DATA.filter(item => !existingKeys.has(item.key));
-    if (missingRows.length > 0) {
-      await sheet.addRows(missingRows);
-      rows = await sheet.getRows();
-    }
+    // Auto-seed is now only handled in PUT (admin path)
 
     const data: Record<string, any> = {};
 
@@ -135,13 +129,17 @@ export async function PUT(req: Request) {
 
     // Second pass: Update and save
     let updated = false;
+    const promises = [];
     for (const row of rows) {
       const key = row.get('key');
       if (body[key] !== undefined) {
         row.set('value', body[key]);
-        await row.save();
+        promises.push(row.save());
         updated = true;
       }
+    }
+    if (promises.length > 0) {
+      await Promise.all(promises);
     }
 
     if (!updated) {

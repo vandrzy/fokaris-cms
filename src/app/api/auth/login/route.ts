@@ -6,9 +6,16 @@ import { cookies } from "next/headers";
 import { JWT } from 'google-auth-library';
 import { getJwtSecret } from "@/lib/env";
 import { handleApiError, ApiError } from "@/lib/api-error";
+import { rateLimit } from "@/lib/rate-limit";
 
 export async function POST(req: Request) {
   try {
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() || "unknown";
+    const rl = rateLimit(`login:${ip}`, 5, 15 * 60 * 1000);
+    if (!rl.allowed) {
+      throw new ApiError(429, "Terlalu banyak percobaan login. Coba lagi nanti.");
+    }
+
     const { username, password } = await req.json();
 
     if (!username || !password) {
@@ -47,10 +54,7 @@ export async function POST(req: Request) {
     }
 
     const storedHash = userRow.get('password');
-    // If it's the first time and not hashed (for safety during migration)
-    const isMatch = storedHash.startsWith("$2a$") || storedHash.startsWith("$2b$") 
-      ? await bcrypt.compare(password, storedHash)
-      : storedHash === password;
+    const isMatch = await bcrypt.compare(password, storedHash);
 
     if (!isMatch) {
       throw new ApiError(401, "username atau password salah");

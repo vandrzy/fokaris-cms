@@ -11,8 +11,20 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
-  title: "Website Organisasi",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://fokaris.org"),
+  title: {
+    default: "Fokaris — Organisasi",
+    template: "%s | Fokaris",
+  },
   description: "Landing page resmi organisasi kami.",
+  openGraph: {
+    type: "website",
+    locale: "id_ID",
+    siteName: "Fokaris",
+    url: "/",
+  },
+  twitter: { card: "summary_large_image" },
+  robots: { index: true, follow: true },
 };
 
 export default function RootLayout({
@@ -21,7 +33,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="id">
       <body
         className={`${inter.variable} ${poppins.variable} font-inter bg-background text-body text-[16px] md:text-[18px] min-h-screen flex flex-col`}
       >

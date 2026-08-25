@@ -13,6 +13,10 @@ export async function PUT(req: Request) {
       throw new ApiError(400, "Password lama dan baru wajib diisi");
     }
 
+    if (newPassword.length < 6) {
+      throw new ApiError(400, "Password baru minimal 6 karakter");
+    }
+
     const { username } = await requireAuth();
 
     const serviceAccountAuth = new JWT({
@@ -44,9 +48,7 @@ export async function PUT(req: Request) {
     }
 
     const storedHash = userRow.get('password');
-    const isMatch = storedHash.startsWith("$2a$") || storedHash.startsWith("$2b$") 
-      ? await bcrypt.compare(oldPassword, storedHash)
-      : storedHash === oldPassword;
+    const isMatch = await bcrypt.compare(oldPassword, storedHash);
 
     if (!isMatch) {
       throw new ApiError(400, "Password lama salah");

@@ -56,6 +56,11 @@ export async function POST(req: Request) {
       throw new ApiError(400, "Format file tidak valid. Harap unggah gambar.");
     }
 
+    const MAX_BYTES = 5 * 1024 * 1024;
+    if (file.size > MAX_BYTES) {
+      throw new ApiError(413, "Ukuran gambar maksimal 5 MB");
+    }
+
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 

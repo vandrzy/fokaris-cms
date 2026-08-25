@@ -86,8 +86,8 @@ export async function GET(req: Request) {
     // Data in sheet might be oldest to newest, usually we want newest first, let's reverse it to show newest uploads first
     allData = allData.reverse();
 
-    const page = pageStr ? parseInt(pageStr, 10) : 1;
-    const limit = limitStr ? parseInt(limitStr, 10) : 10;
+    const page = Math.max(1, parseInt(pageStr || "1", 10) || 1);
+    const limit = Math.min(50, Math.max(1, parseInt(limitStr || "10", 10) || 10));
     const startIndex = (page - 1) * limit;
     const paginatedData = allData.slice(startIndex, startIndex + limit);
 
@@ -120,6 +120,10 @@ export async function POST(req: Request) {
     }
     if (!file.type.startsWith("image/")) {
       throw new ApiError(400, "Format file tidak valid. Harap unggah gambar.");
+    }
+    const MAX_BYTES = 5 * 1024 * 1024;
+    if (file.size > MAX_BYTES) {
+      throw new ApiError(413, "Ukuran gambar maksimal 5 MB");
     }
 
     // 1. Generate ID & shortcode
@@ -212,6 +216,10 @@ export async function PUT(req: Request) {
     let secureUrl = row.get("link gambar");
 
     if (file && file.type.startsWith("image/")) {
+      const MAX_BYTES = 5 * 1024 * 1024;
+      if (file.size > MAX_BYTES) {
+        throw new ApiError(413, "Ukuran gambar maksimal 5 MB");
+      }
       // Upload new image
       const bytes = await file.arrayBuffer();
       const buffer = Buffer.from(bytes);

@@ -69,9 +69,16 @@ async function processBase64Images(html: string): Promise<string> {
   const regex = /src="(data:image\/[^;]+;base64,[^"]+)"/g;
   let match;
   let processedHtml = html;
+  const MAX_BYTES = 5 * 1024 * 1024;
 
   while ((match = regex.exec(html)) !== null) {
     const base64Data = match[1];
+    
+    const approxBytes = Math.floor((base64Data.length * 3) / 4);
+    if (approxBytes > MAX_BYTES) {
+      throw new ApiError(413, "Gambar dalam konten terlalu besar (maks 5 MB)");
+    }
+
     const base64String = base64Data.split(",")[1];
     const buffer = Buffer.from(base64String, "base64");
 
@@ -130,7 +137,6 @@ export async function GET(req: Request) {
       "cover link": row.get("cover link"),
       shortcode: row.get("shortcode"),
       "tanggal dupload": row.get("tanggal dupload"),
-      "isi blog": row.get("isi blog"),
     }));
 
     if (namaParam) {
@@ -142,8 +148,8 @@ export async function GET(req: Request) {
     // Latest first
     allData = allData.reverse();
 
-    const page = pageStr ? parseInt(pageStr, 10) : 1;
-    const limit = limitStr ? parseInt(limitStr, 10) : 10;
+    const page = Math.max(1, parseInt(pageStr || "1", 10) || 1);
+    const limit = Math.min(50, Math.max(1, parseInt(limitStr || "10", 10) || 10));
     const startIndex = (page - 1) * limit;
     const paginatedData = allData.slice(startIndex, startIndex + limit);
 
@@ -175,6 +181,10 @@ export async function POST(req: Request) {
 
     if (!file.type.startsWith("image/")) {
       throw new ApiError(400, "Format file cover tidak valid. Harap unggah gambar.");
+    }
+    const MAX_BYTES = 5 * 1024 * 1024;
+    if (file.size > MAX_BYTES) {
+      throw new ApiError(413, "Ukuran gambar cover maksimal 5 MB");
     }
 
     // 1. Generate ID & shortcode
@@ -253,6 +263,10 @@ export async function PUT(req: Request) {
 
     // Process new cover image
     if (file && file.type.startsWith("image/")) {
+      const MAX_BYTES = 5 * 1024 * 1024;
+      if (file.size > MAX_BYTES) {
+        throw new ApiError(413, "Ukuran gambar cover maksimal 5 MB");
+      }
       const bytes = await file.arrayBuffer();
       const buffer = Buffer.from(bytes);
       const uploadResult = await uploadToCloudinary(buffer, "fokaris_cms/blog");
