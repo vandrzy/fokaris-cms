@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Newspaper, Image as ImageIcon, HardDrive, Loader2, AlertCircle } from "lucide-react";
+import { Newspaper, Image as ImageIcon, HardDrive, Loader2, AlertCircle, BookOpen, PenTool, LayoutTemplate, HelpCircle } from "lucide-react";
 import { toast } from "sonner";
 
 export default function DashboardOverview() {
@@ -58,7 +58,7 @@ export default function DashboardOverview() {
       <div className="bg-white p-6 md:p-8 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-poppins font-bold text-gray-900 mb-2">
-            Selamat datang kembali, Admin! 👋
+            Selamat datang kembali, Admin!
           </h2>
           <p className="text-gray-500 text-sm">
             Ini adalah tampilan awal dashboard Anda. Anda dapat mengelola seluruh konten website dari panel ini.
@@ -134,6 +134,88 @@ export default function DashboardOverview() {
               style={{ width: `${isLoading ? 0 : usagePercent}%` }}
             ></div>
           </div>
+        </div>
+      </div>
+
+      {/* User Guide Section */}
+      <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden mt-8">
+        <div className="bg-primary/5 px-6 py-4 border-b border-gray-100 flex items-center gap-3">
+          <BookOpen className="w-6 h-6 text-primary" />
+          <h2 className="text-xl font-poppins font-bold text-header">Panduan Penggunaan CMS</h2>
+        </div>
+
+        <div className="p-6 md:p-8 space-y-8">
+
+          {/* Guide Item 1 */}
+          <div className="flex gap-4">
+            <div className="flex-shrink-0 mt-1">
+              <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600">
+                <LayoutTemplate className="w-5 h-5" />
+              </div>
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-header mb-2">1. Mengelola Halaman Publik</h3>
+              <p className="text-body text-sm leading-relaxed mb-2">
+                Melalui menu <strong>Manajemen Konten</strong> di <em>sidebar</em> kiri, Anda dapat mengubah teks, deskripsi, dan gambar utama pada halaman publik:
+              </p>
+              <ul className="list-disc list-inside text-sm text-body space-y-1 ml-2">
+                <li><strong>Halaman Beranda:</strong> Mengubah teks sambutan, deskripsi <em>About</em>, angka statistik, serta mengunggah gambar latar belakang (<em>Hero Slider</em>). Anda juga dapat memilih foto unggulan untuk ditampilkan di seksi Galeri Beranda.</li>
+                <li><strong>Halaman Galeri & Blog:</strong> Mengubah teks pengantar pada masing-masing halaman.</li>
+              </ul>
+              <div className="mt-2 text-xs text-primary bg-primary/10 inline-block px-3 py-1 rounded-md">
+                Tip: Jangan lupa klik tombol &quot;Simpan Perubahan&quot; di bagian bawah layar setelah mengedit.
+              </div>
+            </div>
+          </div>
+
+          <hr className="border-gray-100" />
+
+          {/* Guide Item 2 */}
+          <div className="flex gap-4">
+            <div className="flex-shrink-0 mt-1">
+              <div className="w-10 h-10 rounded-full bg-purple-50 flex items-center justify-center text-purple-600">
+                <ImageIcon className="w-5 h-5" />
+              </div>
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-header mb-2">2. Menambah & Mengelola Galeri</h3>
+              <p className="text-body text-sm leading-relaxed mb-2">
+                Pilih menu <strong>Galeri</strong> pada kategori <em>Metadata</em> untuk mengelola kumpulan foto kegiatan.
+              </p>
+              <ul className="list-disc list-inside text-sm text-body space-y-1 ml-2">
+                <li>Klik tombol <strong>+ Tambah Foto</strong> untuk mengunggah gambar baru dari perangkat Anda.</li>
+                <li>Anda dapat memberikan judul dan kategori warna <em>highlight</em> pada setiap foto.</li>
+                <li>Gunakan fitur Pencarian untuk menemukan foto tertentu dengan cepat.</li>
+                <li>Klik ikon tempat sampah berwarna merah untuk menghapus foto secara permanen.</li>
+              </ul>
+            </div>
+          </div>
+
+          <hr className="border-gray-100" />
+
+          {/* Guide Item 3 */}
+          <div className="flex gap-4">
+            <div className="flex-shrink-0 mt-1">
+              <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center text-green-600">
+                <PenTool className="w-5 h-5" />
+              </div>
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-header mb-2">3. Menulis & Mempublikasikan Blog</h3>
+              <p className="text-body text-sm leading-relaxed mb-2">
+                Pilih menu <strong>Blog</strong> pada kategori <em>Metadata</em> untuk menulis artikel berita atau pengumuman.
+              </p>
+              <ul className="list-disc list-inside text-sm text-body space-y-1 ml-2">
+                <li>Klik <strong>+ Tambah Blog</strong> untuk masuk ke editor artikel.</li>
+                <li>Anda wajib mengunggah <strong>Gambar Cover</strong> sebagai <em>thumbnail</em> artikel.</li>
+                <li>Gunakan <em>Rich Text Editor</em> (kolom isi) untuk menebalkan teks, menambahkan poin (<em>bullet</em>), atau menyisipkan gambar pendukung langsung di dalam isi artikel.</li>
+                <li>Artikel yang sudah dibuat dapat di-edit ulang dengan menekan ikon Pensil pada daftar tabel.</li>
+              </ul>
+            </div>
+          </div>
+
+          <hr className="border-gray-100" />
+
         </div>
       </div>
     </div>
