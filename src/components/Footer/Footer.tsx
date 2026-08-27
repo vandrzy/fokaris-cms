@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 
 export default function Footer() {
   return (
@@ -7,7 +8,7 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div>
             <div className="mb-4">
-              <img src="/logo.png" alt="Logo" className="h-14 w-auto object-contain" />
+              <Image src="/logo.png" alt="Logo" width={160} height={56} className="h-14 w-auto object-contain" />
             </div>
 
           </div>

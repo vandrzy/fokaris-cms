@@ -3,6 +3,9 @@
 import { useState, useEffect } from "react";
 import { Save, Image as ImageIcon, Plus, Trash2, Check, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { cldTransform } from "@/lib/cloudinary-url";
+import Image from "next/image";
+import cloudinaryLoader from "@/lib/cloudinary-loader";
 
 type GalleryItem = { shortcode: string; "link gambar": string };
 
@@ -235,7 +238,7 @@ export default function HomeDashboardPage() {
                       
                       {imgUrl && (
                         <div className="absolute inset-0 z-0">
-                          <img src={imgUrl} alt={`Hero ${num}`} className="w-full h-full object-cover" />
+                          <Image loader={cloudinaryLoader} src={imgUrl} alt={`Hero ${num}`} fill sizes="400px" className="object-cover" />
                           <div className="absolute inset-0 bg-black/40 group-hover:bg-black/50 transition-colors"></div>
                         </div>
                       )}
@@ -346,8 +349,8 @@ export default function HomeDashboardPage() {
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {selectedGallery.length > 0 ? selectedGallery.map((item) => (
-              <div key={item.shortcode} className="relative group rounded-lg overflow-hidden border border-gray-200">
-                <img src={item["link gambar"]} alt="Selected" className="w-full h-32 object-cover" />
+              <div key={item.shortcode} className="relative group rounded-lg overflow-hidden border border-gray-200 h-32">
+                <Image loader={cloudinaryLoader} src={item["link gambar"]} alt="Selected" fill sizes="300px" className="object-cover" />
                 <button 
                   type="button" 
                   onClick={() => setSelectedGallery(prev => prev.filter(g => g.shortcode !== item.shortcode))} 
@@ -406,7 +409,7 @@ export default function HomeDashboardPage() {
                                   }
                                }}
                              >
-                               <img src={item["link gambar"]} alt={item.judul} className="w-full h-32 object-cover" />
+                               <Image loader={cloudinaryLoader} src={item["link gambar"]} alt={item.judul} fill sizes="300px" className="object-cover" />
                                {isSelected && (
                                  <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
                                    <Check className="w-8 h-8 text-white bg-primary rounded-full p-1 shadow" />

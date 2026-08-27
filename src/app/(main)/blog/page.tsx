@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback } from "react";
 import { useTextData } from "@/context/TextContext";
 import Link from "next/link";
 import { Calendar, Search, Loader2 } from "lucide-react";
+import Image from "next/image";
+import cloudinaryLoader from "@/lib/cloudinary-loader";
 
 type BlogItem = {
   id: string;
@@ -94,7 +96,7 @@ export default function Blog() {
               >
                 <div className={`h-48 w-full bg-primary/10 relative overflow-hidden flex items-center justify-center`}>
                   {post["cover link"] ? (
-                    <img src={post["cover link"]} alt={post.judul} className="w-full h-full object-cover" />
+                    <Image loader={cloudinaryLoader} src={post["cover link"]} alt={post.judul} fill sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" className="object-cover" />
                   ) : (
                     <div className={`absolute inset-0 bg-gradient-to-br from-primary/20 to-transparent opacity-50`}></div>
                   )}

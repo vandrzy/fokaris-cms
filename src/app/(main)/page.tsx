@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import { useTextData } from "@/context/TextContext";
 import Link from "next/link";
 import Image from "next/image";
+import { cldTransform } from "@/lib/cloudinary-url";
+import cloudinaryLoader from "@/lib/cloudinary-loader";
 
 // CMS Mock Data
 const cmsData = {
@@ -68,20 +70,29 @@ export default function Home() {
       {/* 3.1 Hero Section (Slider) */}
       <section className="relative w-full h-screen overflow-hidden bg-header flex items-center">
         {/* Background Images */}
-        {activeHeroImages.map((src, index) => (
-          <div
-            key={index}
-            className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${index === currentSlide ? "opacity-100" : "opacity-0"
-              }`}
-          >
+        {activeHeroImages.map((src, index) => {
+          // Hanya muat gambar yang aktif, prev, atau next agar hemat bandwidth awal
+          const isVisible = index === currentSlide || 
+            index === (currentSlide - 1 + activeHeroImages.length) % activeHeroImages.length || 
+            index === (currentSlide + 1) % activeHeroImages.length || 
+            activeHeroImages.length <= 2;
+
+          return (
             <div
-              className="absolute inset-0 bg-cover bg-center transform hover:scale-105 transition-transform duration-[20s]"
-              style={{ backgroundImage: `url(${src})` }}
-            />
-            {/* Dark Overlay for better text readability */}
+              key={index}
+              className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${index === currentSlide ? "opacity-100" : "opacity-0"
+                }`}
+            >
+              {isVisible && (
+                <div
+                  className="absolute inset-0 bg-cover bg-center transform hover:scale-105 transition-transform duration-[20s]"
+                  style={{ backgroundImage: `url(${cldTransform(src, "f_auto,q_auto,w_1920")})` }}
+                />
+              )}
+              {/* Dark Overlay for better text readability */}
             <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-transparent"></div>
           </div>
-        ))}
+        )})}
 
         {/* Content Overlay */}
         <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center">
@@ -212,10 +223,13 @@ export default function Home() {
                     if (state === 'prev' || state === 'next') setActiveGalleryIndex(index);
                   }}
                 >
-                  <img
+                  <Image
+                    loader={cloudinaryLoader}
                     src={item.src}
                     alt={item.alt}
-                    className="w-full h-full object-cover rounded-[inherit]"
+                    fill
+                    sizes="(max-width: 768px) 85vw, (max-width: 1200px) 65vw, 50vw"
+                    className="object-cover rounded-[inherit]"
                   />
                 </div>
               );

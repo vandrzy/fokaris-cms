@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 
 export default function Navbar() {
@@ -42,7 +43,7 @@ export default function Navbar() {
         <div className="flex justify-between items-center h-20">
           <div className="flex-shrink-0 flex items-center gap-3">
             <Link href="/" className="flex items-center">
-              <img src="/logo.png" alt="Logo" className="h-10 w-auto object-contain" />
+              <Image src="/logo.png" alt="Logo" width={120} height={40} className="h-10 w-auto object-contain" priority />
             </Link>
           </div>
           

@@ -6,6 +6,8 @@ import Link from "next/link";
 import { Calendar, ArrowLeft, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import DOMPurify from "isomorphic-dompurify";
+import Image from "next/image";
+import cloudinaryLoader from "@/lib/cloudinary-loader";
 
 type BlogData = {
   judul: string;
@@ -85,10 +87,14 @@ export default function BlogDetail() {
           
           {data["cover link"] && (
             <div className="w-full h-[400px] relative">
-              <img 
+              <Image 
+                loader={cloudinaryLoader}
                 src={data["cover link"]} 
                 alt={data.judul} 
-                className="w-full h-full object-cover"
+                fill
+                sizes="(max-width: 1200px) 100vw, 1200px"
+                className="object-cover"
+                priority
               />
             </div>
           )}

@@ -5,6 +5,9 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Search, Plus, Edit, Trash2, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { cldTransform } from "@/lib/cloudinary-url";
+import Image from "next/image";
+import cloudinaryLoader from "@/lib/cloudinary-loader";
 
 type BlogItem = {
   id: string;
@@ -176,11 +179,14 @@ export default function BlogAdminPage() {
                 data.map((item) => (
                   <tr key={item.shortcode} className="hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="h-16 w-16 rounded-md overflow-hidden bg-gray-100 border border-gray-200">
-                        <img
+                      <div className="relative h-16 w-16 rounded-md overflow-hidden bg-gray-100 border border-gray-200">
+                        <Image
+                          loader={cloudinaryLoader}
                           src={item["cover link"]}
                           alt={item.judul}
-                          className="h-full w-full object-cover"
+                          fill
+                          sizes="64px"
+                          className="object-cover"
                         />
                       </div>
                     </td>

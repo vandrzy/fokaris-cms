@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useTextData } from "@/context/TextContext";
+import Image from "next/image";
+import cloudinaryLoader from "@/lib/cloudinary-loader";
 
 type GalleryItem = {
   judul: string;
@@ -103,10 +105,13 @@ export default function Galeri() {
                   className={`relative rounded-3xl overflow-hidden group cursor-pointer break-inside-avoid shadow-sm hover:shadow-2xl transition-all duration-300 ${item.height} ${item.color}`}
                   onClick={() => setSelectedImage(item)}
                 >
-                  <img 
+                  <Image 
+                    loader={cloudinaryLoader}
                     src={item["link gambar"]} 
-                    alt={item.judul} 
-                    className="absolute inset-0 w-full h-full object-cover"
+                    alt={item.judul}
+                    fill
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                    className="object-cover"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-header/90 via-header/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
 
@@ -143,10 +148,13 @@ export default function Galeri() {
               </svg>
             </button>
             
-            <img 
+            <Image 
+              loader={cloudinaryLoader}
               src={selectedImage["link gambar"]} 
-              alt={selectedImage.judul} 
-              className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl"
+              alt={selectedImage.judul}
+              width={1600}
+              height={900}
+              className="w-auto max-h-[85vh] object-contain rounded-lg shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             />
             
