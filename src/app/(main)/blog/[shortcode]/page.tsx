@@ -5,7 +5,6 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Calendar, ArrowLeft, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import DOMPurify from "isomorphic-dompurify";
 import Image from "next/image";
 import cloudinaryLoader from "@/lib/cloudinary-loader";
 
@@ -111,7 +110,7 @@ export default function BlogDetail() {
 
             <div 
               className="prose prose-lg max-w-none text-gray-700"
-              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(data["isi blog"] || "") }}
+              dangerouslySetInnerHTML={{ __html: data["isi blog"] || "" }}
             />
           </div>
         </article>

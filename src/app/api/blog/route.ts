@@ -4,7 +4,7 @@ import { GoogleSpreadsheet } from "google-spreadsheet";
 import { JWT } from "google-auth-library";
 import crypto from "crypto";
 import { requireAuth } from "@/lib/auth";
-import DOMPurify from "isomorphic-dompurify";
+import sanitizeHtml from "sanitize-html";
 import { handleApiError, ApiError } from "@/lib/api-error";
 
 async function getDoc() {
@@ -93,10 +93,6 @@ async function processBase64Images(html: string): Promise<string> {
   return processedHtml;
 }
 
-const purifyConfig = {
-  ALLOWED_TAGS: ["p","br","strong","em","u","s","h1","h2","h3","h4","ul","ol","li","blockquote","a","img","code","pre","span"],
-  ALLOWED_ATTR: ["href","src","alt","title","target","rel","class"],
-};
 
 export async function GET(req: Request) {
   try {
@@ -201,7 +197,13 @@ export async function POST(req: Request) {
     const processedIsi = await processBase64Images(isi);
     
     // 3b. Sanitize HTML
-    const cleanIsi = DOMPurify.sanitize(processedIsi, purifyConfig);
+    const cleanIsi = sanitizeHtml(processedIsi, {
+      allowedTags: sanitizeHtml.defaults.allowedTags.concat([ 'img' ]),
+      allowedAttributes: {
+        ...sanitizeHtml.defaults.allowedAttributes,
+        'img': [ 'src', 'alt', 'width', 'height', 'style' ]
+      }
+    });
 
     // 4. Save to Google Sheets
     const doc = await getDoc();
@@ -293,7 +295,13 @@ export async function PUT(req: Request) {
       
       // Process new images (uploads base64)
       processedIsi = await processBase64Images(isi);
-      processedIsi = DOMPurify.sanitize(processedIsi, purifyConfig);
+      processedIsi = sanitizeHtml(processedIsi, {
+        allowedTags: sanitizeHtml.defaults.allowedTags.concat([ 'img' ]),
+        allowedAttributes: {
+          ...sanitizeHtml.defaults.allowedAttributes,
+          'img': [ 'src', 'alt', 'width', 'height', 'style' ]
+        }
+      });
       
       // Find images currently in new content
       const newImages = extractCloudinaryPublicIds(processedIsi);
